@@ -113,55 +113,37 @@ function deleteUser(PDO $pdo, int $id_utilisateur): bool | string {
 
 
 
-function getUsersByPage($pdo, $offset = 0, $limit = 15, $search = '') {
+function getUsersByPage(PDO $pdo, int $offset, int $limit): array {
     try {
-        $sql = "SELECT * FROM utilisateur WHERE 1=1";
-        $params = [];
-
-        if (!empty($search)) {
-            $sql .= " AND (nom LIKE :search OR email LIKE :search OR role LIKE :search)";
-            $search = "%$search%";
+        $stmt = $pdo->prepare("SELECT * FROM utilisateur ORDER BY id_utilisateur DESC LIMIT :limit OFFSET :offset");
+        
+        // Bind des paramètres de manière explicite
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        
+        if (!$stmt->execute()) {
+            throw new Exception("Erreur lors de l'exécution de la requête");
         }
-
-        $sql .= " ORDER BY id_utilisateur ASC LIMIT :limit OFFSET :offset";
         
-        $stmt = $pdo->prepare($sql);
-        
-        // Bind des paramètres avec les types corrects
-        if (!empty($search)) {
-            $stmt->bindValue(':search', $search, PDO::PARAM_STR);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($results === false) {
+            return [];
         }
-        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
         
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $results;
     } catch (PDOException $e) {
-        error_log("Erreur SQL getUsersByPage: " . $e->getMessage());
+        error_log("Error in getUsersByPage: " . $e->getMessage());
         throw new Exception("Erreur lors de la récupération des utilisateurs");
     }
 }
 
-function getUserCount($pdo, $search = '') {
+function getUserCount(PDO $pdo): int {
     try {
-        $sql = "SELECT COUNT(*) FROM utilisateur WHERE 1=1";
-        $params = [];
-
-        if (!empty($search)) {
-            $sql .= " AND (nom LIKE :search OR email LIKE :search OR role LIKE :search)";
-            $search = "%$search%";
-        }
-
-        $stmt = $pdo->prepare($sql);
-        
-        if (!empty($search)) {
-            $stmt->bindValue(':search', $search, PDO::PARAM_STR);
-        }
-        
-        $stmt->execute();
-        return $stmt->fetchColumn();
+        $stmt = $pdo->query("SELECT COUNT(*) FROM utilisateur");
+        $count = $stmt->fetchColumn();
+        return (int)$count;
     } catch (PDOException $e) {
-        error_log("Erreur SQL getUserCount: " . $e->getMessage());
+        error_log("Error in getUserCount: " . $e->getMessage());
         throw new Exception("Erreur lors du comptage des utilisateurs");
     }
 }

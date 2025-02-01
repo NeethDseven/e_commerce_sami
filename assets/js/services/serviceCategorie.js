@@ -1,6 +1,6 @@
 export async function fetchCategories() {
     try {
-        const response = await fetch('/Projet/ecommercesami/index.php?controller=article&fetch=categories', {
+        const response = await fetch('/Projet/ecommercesami/index.php?controller=category&action=list', {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
@@ -11,9 +11,13 @@ export async function fetchCategories() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        return await response.json();
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Erreur lors de la récupération des catégories');
+        }
+
+        return data.categories;
     } catch (error) {
-        console.error('Error fetching categories for navbar:', error);
         throw error;
     }
 }

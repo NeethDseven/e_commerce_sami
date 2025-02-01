@@ -85,14 +85,19 @@ export async function createUtilisateur(form) {
 }
 
 export const updateUtilisateur = async (form, id) => {
-    const data = new FormData(form);
+    const formData = new FormData(form);
+    
+    // Si le mot de passe est vide, le supprimer du FormData
+    if (!formData.get('password').trim()) {
+        formData.delete('password');
+    }
 
     const response = await fetch(`${BASE_URL}?action=update&id_utilisateur=${id}`, {
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
         },
         method: 'POST',
-        body: data
+        body: formData
     });
 
     const text = await response.text();

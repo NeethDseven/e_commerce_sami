@@ -19,138 +19,16 @@
         <div class="col">
             <h3 class="text-center mb-4">Nos Promotions</h3>
             <div id="promotions-container">
-                <!-- Le carrousel sera injecté ici -->
+                <!-- Le carrousel sera injecté ici via promotions.js -->
             </div>
         </div>
     </div>
-
-    <!-- Ajouter du CSS personnalisé -->
-    <style>
-        #promotions-container {
-            max-width: 1200px; /* Augmenter la largeur pour 3 articles */
-            margin: 0 auto;
-            position: relative;
-        }
-        .carousel-inner {
-            padding: 1rem;
-            margin: 0 auto;
-        }
-        .custom-carousel-button {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 40px;
-            height: 40px;
-            background-color: rgba(0, 0, 0, 0.7);
-            border-radius: 50%;
-            border: none;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-        .custom-carousel-button:hover {
-            background-color: rgba(0, 0, 0, 0.9);
-            cursor: pointer;
-        }
-        .carousel-control-prev.custom-carousel-button {
-            left: calc(50% - 300px); /* Ajuster selon vos besoins */
-        }
-        .carousel-control-next.custom-carousel-button {
-            right: calc(50% - 300px); /* Ajuster selon vos besoins */
-        }
-        .custom-carousel-icon {
-            width: 24px;
-            height: 24px;
-            background-color: transparent;
-        }
-        .carousel-control-prev-icon,
-        .carousel-control-next-icon {
-            filter: brightness(2);
-        }
-        #carouselExampleRide {
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .carousel-item .card {
-            border: none;
-        }
-        .carousel-item .card-img-overlay {
-            padding: 2rem;
-        }
-        .carousel-control-prev,
-        .carousel-control-next {
-            width: 5%;
-            background-color: rgba(0,0,0,0.5);
-            border-radius: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 50px;
-            width: 50px;
-            opacity: 0.9;
-        }
-        .carousel-control-prev {
-            left: -25px;
-        }
-        .carousel-control-next {
-            right: -25px;
-        }
-        .carousel-control-prev-icon,
-        .carousel-control-next-icon {
-            width: 30px;
-            height: 30px;
-            background-color: rgba(0,0,0,0.5);
-            border-radius: 50%;
-            padding: 15px;
-        }
-        .card {
-            margin: 0 0.5rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        /* Assurer que les boutons sont au-dessus des cartes */
-        .carousel-control-prev,
-        .carousel-control-next {
-            z-index: 10;
-        }
-        .carousel-indicators {
-            bottom: -40px;
-        }
-        .carousel-indicators button {
-            background-color: #666;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-        .carousel-indicators .active {
-            background-color: #000;
-        }
-        .savings-badge {
-            border-radius: 50%;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-    </style>
 
     <!-- Section des catégories -->
     <div class="row mb-4">
         <div class="col">
             <div id="category-buttons" class="mb-4">
-                <button class="btn btn-outline-primary category-btn me-2" data-category="" data-order="0">
-                    Toutes les catégories
-                </button>
-                <?php foreach ($categories as $category): ?>
-                    <button class="btn btn-outline-primary category-btn me-2" 
-                            data-category="<?= htmlspecialchars($category['id_categorie']) ?>"
-                            data-order="<?= htmlspecialchars($category['ordre']) ?>">
-                        <?= htmlspecialchars($category['nom']) ?>
-                    </button>
-                <?php endforeach; ?>
+                <!-- Les boutons de catégorie seront injectés ici via componentCategorie.js -->
             </div>
         </div>
     </div>

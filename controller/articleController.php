@@ -1,58 +1,67 @@
 <?php
-include_once __DIR__ . '/../includes/database.php';
-include_once __DIR__ . '/../model/articleModel.php';
+require_once __DIR__ . '/../includes/database.php';
+require_once __DIR__ . '/../model/articleModel.php';
+require_once __DIR__ . '/../model/categoryModel.php';
 
-   
-// Vérifier si c'est une requête AJAX
-$isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
-
-// Log pour debugging
-error_log('Request received: ' . ($isAjax ? 'AJAX' : 'Normal'));
-error_log('Parameters: ' . json_encode($_GET));
-
+// Récupérer les catégories en premier
 try {
-    $itemPerPage = 15; // Assurez-vous que cette valeur est cohérente
-    $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
-    $offset = ($page - 1) * $itemPerPage;
-    $category = isset($_GET['category']) ? (int) $_GET['category'] : null;
-    $search = isset($_GET['search']) ? trim($_GET['search']) : null;
+    // Récupérer les catégories en utilisant le nouveau modèle
+    $categories = getCategories($pdo);
+    error_log('Catégories récupérées dans le contrôleur: ' . print_r($categories, true));
 
+    if (empty($categories)) {
+        error_log("Aucune catégorie trouvée");
+        $categories = [];
+    }
+
+    // Traitement des articles
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    $perPage = 15; // Nombre d'articles par page
+    $offset = ($page - 1) * $perPage;
+    $category = isset($_GET['category']) ? intval($_GET['category']) : null;
+    $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+
+    // Utiliser la nouvelle version de getArticles avec le tableau d'options
     $options = [
-        'limit' => $itemPerPage,
+        'limit' => $perPage,
         'offset' => $offset,
         'category' => $category,
         'search' => $search,
-        'withCount' => true,
-        'orderBy' => 'id_article',
-        'orderDirection' => 'ASC'  // Changé de DESC à ASC
+        'withCount' => true
     ];
 
-    [$articles, $totalArticles] = getArticles($pdo, $options);
+    [$articles, $totalCount] = getArticles($pdo, $options);
 
-    
-    $pagination = getPaginationData($page, $totalArticles, $itemPerPage);
+    // Générer les données de pagination avec le nombre total d'articles
+    $paginationData = getPaginationData($page, intval($totalCount), $perPage);
 
-    if ($isAjax) {
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
         header('Content-Type: application/json');
         echo json_encode([
             'success' => true,
             'data' => $articles,
-            'pagination' => $pagination
+            'pagination' => $paginationData
         ]);
-        exit();
+        exit;
     }
 
+    // Pour le rendu normal de la page
+    include __DIR__ . '/../views/articleView.php';
+    
 } catch (Exception $e) {
-    if ($isAjax) {
+    error_log("Erreur: " . $e->getMessage());
+    $categories = [];
+    $error = "Erreur lors du chargement des données";
+
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH'])) {
         header('Content-Type: application/json');
-        http_response_code(500);
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-        exit();
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+        exit;
     }
     $error = $e->getMessage();
-    
+    include __DIR__ . '/../views/articleView.php';
 }
-
-include __DIR__ . '/../views/articleView.php';
 ?>

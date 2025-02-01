@@ -1,29 +1,22 @@
 <?php
 
-function connect($pdo, $identifier, $password) {
-    try {
-        // Debug
-        error_log("Tentative de connexion - Recherche utilisateur avec identifiant: $identifier");
-        
-        $stmt = $pdo->prepare("SELECT * FROM utilisateur WHERE nom = :identifier OR email = :identifier");
-        $stmt->execute(['identifier' => $identifier]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        // Debug
-        if ($user) {
-            error_log("Utilisateur trouvé avec l'identifiant: $identifier");
-        } else {
-            error_log("Aucun utilisateur trouvé avec l'identifiant: $identifier");
-        }
-        
-        if ($user && password_verify($password, $user['mot_de_passe'])) {
-            unset($user['mot_de_passe']);
-            return $user;
-        }
-        
-        return false;
-    } catch (PDOException $e) {
-        error_log("Erreur de connexion : " . $e->getMessage());
-        throw new Exception("Erreur lors de la connexion");
+function connect(PDO $pdo, string $username, string $pass)
+{
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $query = "SELECT * FROM utilisateur WHERE (nom = :username OR email = :username)";
+    $prep = $pdo->prepare($query);
+    $prep->bindValue(':username', $username, PDO::PARAM_STR);
+    try
+    {
+        $prep->execute();
+        $res = $prep->fetch();
+        $prep->closeCursor();
+        return $res;
+    }
+    catch (PDOException $e)
+    {
+        // Log the error message or handle it as needed
+        error_log("Database error: " . $e->getMessage());
+        return null;
     }
 }

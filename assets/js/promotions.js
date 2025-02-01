@@ -1,122 +1,114 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async () => {
     const container = document.getElementById('promotions-container');
-    if (!container) {
-        return;
-    }
-    loadPromotions(container);
-});
-
-async function loadPromotions(container) {
     try {
-        container.innerHTML = '<div class="col-12 text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Chargement...</span></div></div>';
+        const articles = await fetchPromotions();
         
-        const response = await fetch('index.php?controller=promotion&action=getPromotions', {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        if (data.success && data.articles) {
-            displayPromotions(data.articles, container);
+        if (articles && articles.length > 0) {
+            displayPromotions(articles);
         } else {
-            throw new Error('Erreur lors du chargement des promotions');
+            container.innerHTML = '<p class="text-center">Aucune promotion en cours</p>';
         }
     } catch (error) {
-        container.innerHTML = `<div class="col-12"><div class="alert alert-danger">
-            Erreur lors du chargement des promotions
-        </div></div>`;
+        if (container) {
+            container.innerHTML = `<div class="alert alert-danger">
+                Erreur lors du chargement des promotions: ${error.message}
+            </div>`;
+        }
     }
+});
+
+async function fetchPromotions() {
+    const response = await fetch('/Projet/ecommercesami/controller/adminPanelController.php?action=getPromotions', {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+        throw new Error(data.error || 'Erreur serveur');
+    }
+
+    return data.articles || [];
 }
 
-function displayPromotions(articles, container) {
-    if (!articles || articles.length === 0) {
-        container.innerHTML = '<div class="col-12"><div class="alert alert-info">Aucune promotion en cours</div></div>';
+function displayPromotions(promotions) {
+    const container = document.getElementById('promotions-container');
+    if (promotions.length === 0) {
+        container.innerHTML = '<p class="text-center">Aucune promotion en cours</p>';
         return;
     }
 
-    // Regrouper les articles par groupes de 3
-    const articleGroups = [];
-    for (let i = 0; i < articles.length; i += 3) {
-        articleGroups.push(articles.slice(i, i + 3));
-    }
-
-    const carouselHtml = `
-        <div id="carouselExampleCaptions" class="carousel slide">
-            <div class="carousel-indicators">
-                ${articleGroups.map((_, index) => `
-                    <button type="button" 
-                            data-bs-target="#carouselExampleCaptions" 
-                            data-bs-slide-to="${index}" 
-                            class="${index === 0 ? 'active' : ''}"
-                            aria-current="${index === 0 ? 'true' : 'false'}"
-                            aria-label="Slide ${index + 1}">
-                    </button>
-                `).join('')}
-            </div>
+    let html = `
+        <div id="carouselPromotions" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-inner">
-                ${articleGroups.map((group, groupIndex) => `
-                    <div class="carousel-item ${groupIndex === 0 ? 'active' : ''}">
-                        <div class="row justify-content-center">
-                            ${group.map(article => {
-                                const prixOriginal = parseFloat(article.prix);
-                                const prixPromo = parseFloat(article.prix_promotionnel);
-                                const reduction = ((prixOriginal - prixPromo) / prixOriginal) * 100;
-                                const economie = prixOriginal - prixPromo;
-                                
-                                return `
-                                    <div class="col-md-4">
-                                        <div class="card h-100">
-                                            <img src="${article.image || 'path/to/default/image.jpg'}" 
-                                                class="card-img-top" 
-                                                alt="${article.nom}"
-                                                style="height: 200px; object-fit: cover;">
-                                            <div class="card-body">
-                                                <h5 class="card-title">${article.nom}</h5>
-                                                <div class="price-info">
-                                                    <div class="mb-2">
-                                                        <del class="text-muted">${prixOriginal.toFixed(2)}€</del>
-                                                        <span class="text-danger fw-bold fs-5 ms-2">${prixPromo.toFixed(2)}€</span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <span class="badge bg-danger">-${Math.round(reduction)}%</span>
-                                                        <span class="text-success">
-                                                            Économie: ${economie.toFixed(2)}€
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
+                <div class="row">
+    `;
+
+    // Afficher 3 articles par slide
+    for (let i = 0; i < promotions.length; i += 3) {
+        html += `
+            <div class="carousel-item ${i === 0 ? 'active' : ''}">
+                <div class="row justify-content-center">
+        `;
+
+        // Boucle pour les 3 articles du slide courant
+        for (let j = i; j < Math.min(i + 3, promotions.length); j++) {
+            const promo = promotions[j];
+            html += `
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <img src="assets/images/articles/${promo.image}" 
+                             class="card-img-top" 
+                             alt="${promo.nom}">
+                        <div class="card-body">
+                            <h5 class="card-title">${promo.nom}</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <p class="card-text text-decoration-line-through">${promo.prix}€</p>
+                                    <p class="card-text text-danger fw-bold">${promo.prix_promotionnel}€</p>
+                                </div>
+                                <span class="badge bg-danger savings-badge">-${promo.pourcentage_reduction}%</span>
+                            </div>
+                            <button class="btn btn-primary mt-2" onclick="addToCart(${promo.id_article})">
+                                Ajouter au panier
+                            </button>
                         </div>
                     </div>
-                `).join('')}
+                </div>
+            `;
+        }
+
+        html += `
+                </div>
             </div>
-            <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
+        `;
+    }
+
+    html += `
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#carouselPromotions" data-bs-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Précédent</span>
             </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="next">
+            <button class="carousel-control-next" type="button" data-bs-target="#carouselPromotions" data-bs-slide="next">
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Suivant</span>
             </button>
         </div>
     `;
 
-    container.innerHTML = carouselHtml;
+    container.innerHTML = html;
 
     // Initialiser le carousel
-    new bootstrap.Carousel(document.getElementById('carouselExampleCaptions'), {
-        interval: 5000,
-        wrap: true,
-        touch: true
+    new bootstrap.Carousel(document.getElementById('carouselPromotions'), {
+        interval: 3000,
+        ride: true
     });
 }

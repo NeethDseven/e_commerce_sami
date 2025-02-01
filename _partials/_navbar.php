@@ -1,6 +1,11 @@
 <?php
 $action = $action ?? 'default_action';
 $page = $_GET['page'] ?? '';
+
+// S'assurer qu'on n'envoie pas de sortie si on est en train de gérer une redirection
+if (headers_sent()) {
+    return;
+}
 ?>
 
 <nav class="navbar navbar-expand-lg bg-body-tertiary">
@@ -13,53 +18,67 @@ $page = $_GET['page'] ?? '';
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <?php if (isset($_SESSION['Role']) && $_SESSION['Role'] === 'admin'): ?>
                     <li class="nav-item">
-                        <a class="nav-link" href="index.php?page=userlist" data-nav="admin">Liste des Utilisateurs</a>
+                        <a class="nav-link" href="index.php?page=userlist&currentPage=1">Liste des Utilisateurs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php?page=admin" onclick="window.location.href=this.href; return false;">Gestion du Site</a>
                     </li>
                 <?php endif; ?>
-                <ul class="navbar-nav ml-auto">
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <?php if (isset($_SESSION['auth']) && $_SESSION['auth'] === true): ?>
                     <li class="nav-item">
-                        <?php if (isset($_SESSION['auth']) && $_SESSION['auth'] === true): ?>
-                            <a class="nav-link" href="index.php?page=logout" data-nav="auth">Déconnexion</a>
-                        <?php else: ?>
-                            <a class="nav-link" href="index.php?page=login" data-nav="auth">Connexion</a>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#" data-nav="auth" data-bs-toggle="modal" data-bs-target="#inscriptionModal">S'inscrire</a>
-                            </li>
-                        <?php endif; ?>
+                        <a class="nav-link" href="index.php?page=logout" data-nav="auth">Déconnexion</a>
                     </li>
-                </ul>
+                <?php else: ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php?page=login" data-nav="auth">Connexion</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link modal-trigger" href="#" 
+                           data-nav="auth" 
+                           data-action="register" 
+                           data-bs-toggle="modal" 
+                           data-bs-target="#inscriptionModal"
+                           onclick="event.stopPropagation();">S'inscrire</a>
+                    </li>
+                <?php endif; ?>
+            </ul>
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
                     <a class="nav-link" href="index.php?page=orderView" data-nav="order">Ma Commande</a>
                 </li>
             </ul>
-            <form class="d-flex" role="search" method="GET" action="index.php">
-    <?php if ($page !== 'userlist' && $page !== 'orderView'): ?>
-        <select class="form-select me-2" name="category">
-            <option value="">Categories</option>
-            <?php if (!empty($categories)): ?>
-                <?php foreach ($categories as $category): ?>
-                    <option value="<?php echo (int)$category['id_categorie']; ?>">
-                        <?php echo htmlspecialchars($category['nom']); ?>
-                    </option>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </select>
-        <input class="form-control me-2" type="search" name="search" placeholder="Rechercher..." aria-label="Search">
-        <input type="hidden" name="page" value="<?php echo htmlspecialchars($page); ?>">
-        <button class="btn btn-outline-success" type="submit">Rechercher</button>
-    <?php endif; ?>
-</form>
+            <form class="d-flex" role="search" method="GET" action="index.php" id="navSearchForm">
+                <?php if ($page !== 'userlist' && $page !== 'orderView' && $page !== 'admin' && $page !== 'categoryManagement'): ?>
+                    <select class="form-select me-2" name="category" id="navSearchCategory" data-current="<?php echo htmlspecialchars($_GET['category'] ?? ''); ?>">
+                        <option value="">Categories</option>
+                        <?php if (!empty($categories)): ?>
+                            <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo (int)$category['id_categorie']; ?>"
+                                        <?php echo (isset($_GET['category']) && $_GET['category'] == $category['id_categorie']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($category['nom']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                    <input class="form-control" type="search" name="search" id="navSearchInput" 
+                           placeholder="Rechercher..." aria-label="Search" 
+                           value="<?php echo htmlspecialchars($_GET['search'] ?? ''); ?>">
+                    <input type="hidden" name="page" value="<?php echo htmlspecialchars($page); ?>">
+                <?php endif; ?>
+            </form>
         </div>
     </div>
 </nav>
 
 <!-- Modal d'inscription -->
-<div class="modal fade" id="inscriptionModal" tabindex="-1" aria-labelledby="inscriptionModalLabel" aria-hidden="true">
+<div class="modal fade" id="inscriptionModal" tabindex="-1" aria-labelledby="inscriptionModalLabel" aria-hidden="true" data-modal="auth">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="inscriptionModalLabel">Inscription</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <?php if (isset($_SESSION['errors'])): ?>

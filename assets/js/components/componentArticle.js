@@ -1,513 +1,375 @@
 import { 
     fetchArticles, 
-    handleQuantityInput, 
-    setupAddToCartListeners, 
-    showToast 
+    handleQuantityInput 
 } from '../services/serviceArticles.js';
-import { addToCart } from '../services/serviceArticles.js';
+import { showToast, addToCart } from '../services/cartService.js';
 
+// Regroupement des constantes globales
+const articlesContainer = document.getElementById('article');
+const urlParams = new URLSearchParams(window.location.search);
+let isUpdating = false;
+let currentCategory = null; // Ajoutez cette variable globale en haut du fichier pour suivre la catégorie active
+
+// Fonction utilitaire de debounce
 function debounce(func, wait) {
     let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
+    return function(...args) {
         clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+        timeout = setTimeout(() => func(...args), wait);
     };
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    let isUpdating = false;
-
-    // Gestionnaire unifié pour la navigation
-    async function handleNavigation(params = {}, pushState = true) {
-        if (isUpdating) return;
-        isUpdating = true;
-        
-        const loader = document.getElementById('loader');
-        loader?.classList.remove('d-none');
-
-        try {
-            let { page = 1, category = null, search = '' } = params;
-            
-            // Vérifier que les paramètres sont du bon type
-            page = parseInt(page) || 1;
-            category = category ? parseInt(category) : null;
-            search = typeof search === 'string' ? search : '';
-
-            const response = await fetchArticles(category, page, search);
-
-            if (response.success) {
-                // Si aucun résultat, on n'affiche pas la pagination
-                if (!response.data || response.data.length === 0) {
-                    updateArticlesDisplay([]);
-                    // On force la pagination à être vide
-                    const paginationContainer = document.querySelector('#pagination-container .pagination');
-                    if (paginationContainer) {
-                        paginationContainer.innerHTML = '';
-                    }
-                } else {
-                    updateArticlesDisplay(response.data);
-                    updatePagination(response.pagination);
-                }
-
-                updateActiveCategory(category);
-
-                // Mettre à jour les champs de recherche de la navbar
-                if (document.getElementById('navSearchInput')) {
-                    document.getElementById('navSearchInput').value = search;
-                }
-                if (document.getElementById('navSearchCategory')) {
-                    document.getElementById('navSearchCategory').value = category || '';
-                }
-
-                if (pushState) {
-                    const url = new URL(window.location);
-                    if (category) url.searchParams.set('category', category);
-                    else url.searchParams.delete('category');
-                    if (search) url.searchParams.set('search', search);
-                    else url.searchParams.delete('search');
-                    url.searchParams.set('page', page);
-                    history.pushState(params, '', url);
-                }
-
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        } catch (error) {
-            console.error('Erreur de navigation:', error);
-            showToast('Erreur lors de la navigation', 'danger');
-        } finally {
-            loader?.classList.add('d-none');
-            isUpdating = false;
-        }
+// Fonction principale d'affichage d'un article
+export function displayArticle(article) {
+    let html = '<div class="col-md-3 mb-4"><div class="card h-100">';
+    
+    // Image avec badge promo si applicable
+    html += '<div class="position-relative">';
+    html += `<img src="./assets/images/articles/${article.image}" class="card-img-top" alt="${article.nom}">`;
+    if (article.pourcentage_reduction > 0) {
+        html += `<div class="position-absolute top-0 end-0 badge bg-danger m-2">-${article.pourcentage_reduction}%</div>`;
     }
-
-    // Gestionnaire de pagination simplifié
-    const paginationContainer = document.getElementById('pagination-container');
-    if (paginationContainer) {
-        paginationContainer.addEventListener('click', async (e) => {
-            const button = e.target.closest('.page-link');
-            if (!button || button.hasAttribute('disabled') || isUpdating) return;
-            
-            e.preventDefault();
-            const page = parseInt(button.dataset.page);
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            await handleNavigation({
-                page: page,
-                category: urlParams.get('category'),
-                search: urlParams.get('search')
-            });
-        });
+    html += '</div>';
+    
+    // Début du corps de la carte
+    html += '<div class="card-body">';
+    
+    // Titre et description
+    html += `<h5 class="card-title">${article.nom}</h5>`;
+    html += `<p class="card-text text-truncate">${article.description}</p>`;
+    
+    // Prix et badge promo
+    html += '<div class="d-flex justify-content-between align-items-center"><div class="price-container">';
+    if (article.pourcentage_reduction > 0 && article.prix_promotionnel) {
+        const prixInitial = parseFloat(article.prix).toFixed(2);
+        const prixPromo = parseFloat(article.prix_promotionnel).toFixed(2);
+        html += `<p class="card-text text-decoration-line-through">${prixInitial}€</p>`;
+        html += `<p class="card-text text-danger fw-bold">${prixPromo}€</p>`;
+        html += `</div><span class="badge bg-danger">-${article.pourcentage_reduction}%</span>`;
+    } else {
+        const prix = parseFloat(article.prix).toFixed(2);
+        html += `<p class="card-text fw-bold">${prix}€</p></div>`;
     }
-
-    // Gestionnaire de catégories - mise à jour
-    const categoryButtons = document.getElementById('category-buttons');
-    if (categoryButtons) {
-        categoryButtons.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const link = e.target.closest('[data-category]');
-            if (!link || isUpdating) return;
-            
-            const category = link.dataset.category;
-            try {
-                await handleNavigation({ 
-                    page: 1,
-                    category: category,
-                    search: ''  // Réinitialiser la recherche lors du changement de catégorie
-                });
-            } catch (error) {
-                console.error('Erreur lors du changement de catégorie:', error);
-                showToast('Erreur lors du chargement de la catégorie', 'danger');
-            }
-        });
-    }
-
-    // Gestion du bouton retour/avant du navigateur
-    window.addEventListener('popstate', () => {
-        const url = new URL(window.location.href);
-        handleNavigation({
-            page: parseInt(url.searchParams.get('page') || 1),
-            category: url.searchParams.get('category')
-        }, false);
-    });
-
-    // Modifier le gestionnaire de recherche
-    const searchForm = document.querySelector('form[role="search"]');
-    if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
-            const currentPage = new URLSearchParams(window.location.search).get('page');
-            // Si nous sommes sur une page spéciale, laisser le comportement par défaut
-            if (['userlist', 'orderView', 'login', 'register'].includes(currentPage)) {
-                return;
-            }
-            
-            e.preventDefault();
-            const formData = new FormData(this);
-            const selectedCategory = formData.get('category') || null;
-            
-            handleNavigation({
-                page: 1,
-                category: selectedCategory, // Utiliser la catégorie sélectionnée
-                search: formData.get('search')
-            });
-        });
-    }
-
-    // Gestionnaire pour les liens de catégories et pagination
-    document.addEventListener('click', function(e) {
-        const link = e.target.closest('a[href*="category"], a[href*="page"], .page-link');
-        if (!link || !link.href) return;
-        
-        // Liste des liens à exclure du comportement AJAX
-        const excludedPages = ['login', 'register', 'logout', 'userlist', 'orderView'];
-        
-        try {
-            const url = new URL(link.href);
-            const pageParam = url.searchParams.get('page');
-            
-            // Vérifier si le lien doit être géré de manière traditionnelle
-            if (pageParam && excludedPages.includes(pageParam)) {
-                return; // Laisser le comportement par défaut
-            }
-            
-            e.preventDefault();
-            handleNavigation({
-                page: url.searchParams.get('page'),
-                category: url.searchParams.get('category'),
-                search: url.searchParams.get('search')
-            });
-        } catch (error) {
-            console.error('Erreur lors du parsing de l\'URL:', error);
-        }
-    });
+    html += '</div>';
     
-    function updatePagination(paginationData) {
-        const container = document.querySelector('#pagination-container .pagination');
-        if (!container || !paginationData) return;
+    // Contrôles de stock et quantité
+    html += '<div class="quantity-control mt-2">';
+    html += `<small class="text-muted">Stock: ${article.stock} unité${article.stock > 1 ? 's' : ''}</small>`;
     
-        // Si aucun article trouvé, on cache la pagination
-        if (paginationData.totalItems === 0) {
-            container.innerHTML = '';
-            return;
-        }
-    
-        let html = '';
-        
-        // Bouton précédent
-        if (paginationData.hasPreviousPage) {
-            html += `
-                <li class="page-item">
-                    <button class="page-link" data-page="${paginationData.previousPage}">Précédent</button>
-                </li>`;
-        }
-    
-        // Numéros de page
-        for (let i = 1; i <= paginationData.totalPages; i++) {
-            if (i === 1 || i === paginationData.totalPages || 
-                (i >= paginationData.currentPage - 2 && i <= paginationData.currentPage + 2)) {
-                html += `
-                    <li class="page-item ${i === paginationData.currentPage ? 'active' : ''}">
-                        <button class="page-link" data-page="${i}">${i}</button>
-                    </li>`;
-            } else if (i === paginationData.currentPage - 3 || i === paginationData.currentPage + 3) {
-                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-            }
-        }
-    
-        // Bouton suivant
-        if (paginationData.hasNextPage) {
-            html += `
-                <li class="page-item">
-                    <button class="page-link" data-page="${paginationData.nextPage}">Suivant</button>
-                </li>`;
-        }
-    
-        container.innerHTML = html;
-    
-        // Ajout des écouteurs d'événements
-        container.querySelectorAll('.page-link').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                const page = parseInt(button.dataset.page);
-                if (!isNaN(page)) {
-                    handleNavigation({ page });
-                }
-            });
-        });
+    if (article.stock > 0) {
+        html += `
+            <div class="d-flex align-items-center mt-2 gap-2">
+                <div class="input-group input-group-sm" style="width: 120px;">
+                    <button class="btn btn-outline-secondary quantity-btn" data-action="decrease">-</button>
+                    <input type="number" 
+                        class="form-control text-center quantity-input" 
+                        id="quantity-${article.id_article}"
+                        min="1" 
+                        max="${article.stock}" 
+                        value="1" 
+                        data-stock="${article.stock}">
+                    <button class="btn btn-outline-secondary quantity-btn" data-action="increase">+</button>
+                </div>
+                <button class="btn btn-primary flex-grow-1 add-to-cart" data-article-id="${article.id_article}">
+                    Ajouter
+                </button>
+            </div>`;
+    } else {
+        html += '<button class="btn btn-secondary mt-2 w-100" disabled>Rupture de stock</button>';
     }
     
-    // Fonctions utilitaires
-    // Modifier la fonction updateActiveCategory pour synchroniser avec le select
-    function updateActiveCategory(categoryId) {
-        const buttons = document.querySelectorAll('#category-buttons .category-btn');
-        const select = document.querySelector('select[name="category"]');
-        
-        if (buttons) {
-            buttons.forEach(button => {
-                button.classList.remove('active');
-                if (categoryId === null && button.dataset.category === '') {
-                    button.classList.add('active');
-                } else if (button.dataset.category === categoryId?.toString()) {
-                    button.classList.add('active');
-                }
-            });
-        }
-        
-        // Mise à jour du select
-        if (select) {
-            select.value = categoryId || '';
-        }
-    }
+    // Fermeture des divs
+    html += '</div></div></div></div>';
+    
+    return html;
+}
 
-    function updateArticlesDisplay(articles) {
-        const container = document.getElementById('article');
-        if (!container) {
-            console.error('Container #article not found');
-            return;
-        }
+function displayArticles(articles) {
+    const articlesContainer = document.getElementById('articles-container');
+    if (!articlesContainer) return;
 
-        if (!articles || articles.length === 0) {
-            container.innerHTML = '<div class="col-12"><p class="alert alert-info">Aucun article ne correspond à votre recherche</p></div>';
-            // On force la pagination à être vide ici aussi
-            const paginationContainer = document.querySelector('#pagination-container .pagination');
-            if (paginationContainer) {
-                paginationContainer.innerHTML = '';
-            }
-            return;
-        }
+    let html = '<div class="row">';
+    
+    articles.forEach(article => {
+        const prixInitial = parseFloat(article.prix);
+        const promotion = parseFloat(article.promotion) || 0;
+        const prixFinal = promotion > 0 ? prixInitial * (1 - promotion / 100) : prixInitial;
 
-        let html = '';
-        // Afficher tous les articles reçus en grille de 3
-        for (let i = 0; i < articles.length; i += 3) {
-            html += '<div class="row mb-4 justify-content-start">';
-            for (let j = 0; j < 3 && (i + j) < articles.length; j++) {
-                const article = articles[i + j];
-                const hasPromo = article.prix_final !== null && parseFloat(article.prix_final) < parseFloat(article.prix);
-                const prixFinal = hasPromo ? parseFloat(article.prix_final) : parseFloat(article.prix);
-                const reduction = hasPromo ? parseInt(article.pourcentage_reduction) : 0;
-
-                html += `
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100">
-                            ${hasPromo ? `
-                                <div class="position-absolute top-0 end-0 m-2">
-                                    <span class="badge bg-danger">-${reduction}%</span>
-                                </div>
-                            ` : ''}
-                            <img src="${article.image || ''}" class="card-img-top" alt="${article.nom}" 
-                                 style="height: 200px; object-fit: cover;">
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title">${article.nom}</h5>
-                                <p class="card-text flex-grow-1">${article.description}</p>
-                                <div class="mt-auto">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="price-container">
-                                            ${hasPromo ? `
-                                                <del class="text-muted me-2">${article.prix}€</del>
-                                                <span class="text-danger fw-bold fs-5">${prixFinal.toFixed(2)}€</span>
-                                            ` : `
-                                                <span class="fs-5">${parseFloat(article.prix).toFixed(2)}€</span>
-                                            `}
-                                        </div>
-                                        <span class="text-muted">Stock: ${article.stock}</span>
-                                    </div>
-                                    <div class="d-flex gap-2 mt-2">
-                                        <input type="number" 
-                                               id="quantity-${article.id_article}"
-                                               class="form-control" 
-                                               min="1" 
-                                               max="${article.stock}"
-                                               value="1"
-                                               style="width: 80px;">
-                                        <button class="btn btn-primary flex-grow-1 add-to-cart" 
-                                                data-article-id="${article.id_article}">
-                                            Ajouter au panier
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+        html += `
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    // ...existing code...
+                    <div class="card-body">
+                        <h5 class="card-title">${article.nom}</h5>
+                        <p class="card-text">${article.description}</p>
+                        <div class="price-section">
+                            ${promotion > 0 ? 
+                                `<p class="original-price text-muted"><del>${prixInitial.toFixed(2)}€</del></p>
+                                <p class="final-price text-danger">${prixFinal.toFixed(2)}€</p>` :
+                                `<p class="price">${prixFinal.toFixed(2)}€</p>`
+                            }
                         </div>
+                        // ...existing code...
                     </div>
-                `;
-            }
-            html += '</div>';
-        }
-        
-        container.innerHTML = html;
-        setupAddToCartListeners(); // S'assurer que cette ligne est présente
-    }
-
-    // Supprimer les fonctions qui ont été déplacées :
-    // - handleQuantityInput
-    // - setupCartButtons
-    // - handleAddToCart
-    // - showToast
-
-    // Validation des quantités
-    document.querySelectorAll('input[type="number"]').forEach(input => {
-        input.addEventListener('change', (event) => {
-            const max = parseInt(event.target.max);
-            const value = parseInt(event.target.value);
-            if (value > max) {
-                event.target.value = max;
-            }
-            if (value < 1) {
-                event.target.value = 1;
-            }
-        });
+                </div>
+            </div>
+        `;
     });
 
-    // Appel initial pour charger la première page
-    const urlParams = new URLSearchParams(window.location.search);
+    html += '</div>';
+    articlesContainer.innerHTML = html;
+}
+
+async function handleNavigation(params = {}, pushState = true) {
+    if (isUpdating) return;
+    isUpdating = true;
+    
+    try {
+        const categoryToUse = params.category !== undefined ? params.category : currentCategory;
+        const response = await fetchArticles(
+            categoryToUse,
+            params.page || 1,
+            params.search || ''
+        );
+        
+        if (response.success) {
+            currentCategory = categoryToUse;
+            updateArticlesDisplay(response.data);
+            updatePagination(response.pagination);
+            updateActiveCategory(categoryToUse);
+
+            if (pushState) {
+                const url = new URL(window.location);
+                Object.entries({
+                    ...params,
+                    category: categoryToUse
+                }).forEach(([key, value]) => {
+                    if (value) {
+                        url.searchParams.set(key, value);
+                    } else {
+                        url.searchParams.delete(key);
+                    }
+                });
+                history.pushState({ ...params, category: categoryToUse }, '', url);
+            }
+        }
+    } catch (error) {
+        if (articlesContainer) {
+            articlesContainer.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des articles</div>';
+        }
+    } finally {
+        isUpdating = false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser la catégorie courante depuis l'URL
+    currentCategory = urlParams.get('category');
+
     handleNavigation({
         page: parseInt(urlParams.get('page')) || 1,
         category: urlParams.get('category'),
         search: urlParams.get('search')
     }, false);
-    
-    // Gestionnaire pour les liens
-    document.addEventListener('click', function(e) {
-        const link = e.target.closest('a[href*="category"], a[href*="page"]');
-        if (!link || !link.href) return;
-        
-        // Liste des pages à exclure du comportement AJAX
-        const excludedPages = ['login', 'register', 'logout', 'userlist', 'orderView'];
-        
-        try {
-            const url = new URL(link.href);
-            const pageParam = url.searchParams.get('page');
-            
-            // Vérifier si le lien doit être géré de manière traditionnelle
-            if (pageParam && excludedPages.includes(pageParam)) {
-                return; // Laisser le comportement par défaut pour ces pages
-            }
-            
-            // Vérifier si c'est un lien de connexion ou de commande
-            if (link.getAttribute('data-nav') === 'auth' || link.getAttribute('data-nav') === 'order') {
-                return; // Laisser le comportement par défaut
-            }
-            
-            e.preventDefault();
-            handleNavigation({
-                page: url.searchParams.get('page'),
-                category: url.searchParams.get('category'),
-                search: url.searchParams.get('search')
-            });
-        } catch (error) {
-            console.error('Erreur lors du parsing de l\'URL:', error);
-        }
-    });
 
-    // Modification de la fonction handleNavigation
-    async function handleNavigation(params = {}, pushState = true) {
-        if (isUpdating) return;
-        isUpdating = true;
-        
-        try {
-            // Vérifier si params.page est un nombre valide
-            if (params.page && !isNaN(params.page)) {
-                // Si c'est juste un numéro de page sans autre contexte, ajuster l'URL
-                if (Object.keys(params).length === 1 && params.page) {
-                    params = {
-                        ...params,
-                        search: new URLSearchParams(window.location.search).get('search') || '',
-                        category: new URLSearchParams(window.location.search).get('category') || null
-                    };
-                }
-                
-                const response = await fetchArticles(params.category, params.page, params.search);
-                
-                if (response.success) {
-                    // Si aucun résultat, on n'affiche pas la pagination
-                    if (!response.data || response.data.length === 0) {
-                        updateArticlesDisplay([]);
-                        // On force la pagination à être vide
-                        const paginationContainer = document.querySelector('#pagination-container .pagination');
-                        if (paginationContainer) {
-                            paginationContainer.innerHTML = '';
-                        }
-                    } else {
-                        updateArticlesDisplay(response.data);
-                        updatePagination(response.pagination);
-                    }
-                    
-                    if (pushState) {
-                        const url = new URL(window.location.href);
-                        // Mise à jour uniquement des paramètres nécessaires
-                        url.searchParams.set('page', params.page);
-                        if (params.category) {
-                            url.searchParams.set('category', params.category);
-                        } else {
-                            url.searchParams.delete('category');
-                        }
-                        if (params.search) {
-                            url.searchParams.set('search', params.search);
-                        } else {
-                            url.searchParams.delete('search');
-                        }
-                        history.pushState(params, '', url);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Erreur de navigation:', error);
-            showToast('Erreur lors de la navigation', 'danger');
-        } finally {
-            isUpdating = false;
-        }
-    }
+    // Configuration du formulaire de recherche
+    setupSearchForm();
 
-    // Modification de la gestion des clics sur les liens de pagination
-    document.addEventListener('click', function(e) {
+    // Gestion de la pagination
+    document.querySelector('#pagination-container')?.addEventListener('click', e => {
         const pageLink = e.target.closest('.page-link');
         if (!pageLink) return;
         
         e.preventDefault();
-        
         const page = pageLink.dataset.page;
         if (!page) return;
         
         handleNavigation({
             page: parseInt(page),
-            category: new URLSearchParams(window.location.search).get('category'),
-            search: new URLSearchParams(window.location.search).get('search')
+            category: currentCategory, // Utiliser la catégorie active
+            search: urlParams.get('search')
         });
     });
 
-    // Ajouter la gestion du formulaire de recherche de la navbar
-    const navSearchForm = document.getElementById('navSearchForm');
-    if (navSearchForm) {
-        const navSearchInput = document.getElementById('navSearchInput');
-        const navSearchCategory = document.getElementById('navSearchCategory');
+    // Gestion du retour/avant du navigateur
+    window.addEventListener('popstate', (event) => {
+        handleNavigation(event.state || {}, false);
+    });
 
-        // Créer une version debounced de la fonction de recherche
-        const debouncedNavSearch = debounce(() => {
-            const selectedCategory = navSearchCategory.value || null;
-            handleNavigation({
-                page: 1,
-                category: selectedCategory, // Conserver la catégorie sélectionnée
-                search: navSearchInput.value.trim()
-            });
-        }, 300);
+    // Ajouter l'écouteur pour le changement de catégorie
+    window.addEventListener('categoryChange', async (event) => {
+        currentCategory = event.detail.categoryId;
+        await handleNavigation({
+            page: 1,
+            category: currentCategory,
+            search: urlParams.get('search')
+        });
+    });
+});
 
-        // Appliquer le debounce sur l'input
-        navSearchInput.addEventListener('input', debouncedNavSearch);
+function setupSearchForm() {
+    const searchForm = document.querySelector('form[role="search"]');
+    if (!searchForm) return;
 
-        // Appliquer le debounce sur le changement de catégorie
-        navSearchCategory.addEventListener('change', debouncedNavSearch);
+    const searchInput = searchForm.querySelector('input[name="search"]');
+    const categorySelect = searchForm.querySelector('select[name="category"]');
 
-        // Garder le comportement immédiat sur la soumission du formulaire
-        navSearchForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const selectedCategory = navSearchCategory.value || null;
-            handleNavigation({
-                page: 1,
-                category: selectedCategory, // Conserver la catégorie sélectionnée
-                search: navSearchInput.value.trim()
-            });
+    const debouncedSearch = debounce(() => {
+        handleNavigation({
+            page: 1,
+            category: categorySelect?.value || null,
+            search: searchInput?.value?.trim() || ''
+        });
+    }, 300);
+
+    if (searchInput) searchInput.addEventListener('input', debouncedSearch);
+    if (categorySelect) categorySelect.addEventListener('change', debouncedSearch);
+
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        debouncedSearch();
+    });
+}
+
+function updatePagination(paginationData) {
+    const container = document.querySelector('#pagination-container .pagination');
+    if (!container || !paginationData) return;
+
+    if (paginationData.totalItems === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+    if (paginationData.hasPreviousPage) {
+        html += `<li class="page-item"><button class="page-link" data-page="${paginationData.previousPage}">Précédent</button></li>`;
+    }
+
+    for (let i = 1; i <= paginationData.totalPages; i++) {
+        if (i === 1 || i === paginationData.totalPages || 
+            (i >= paginationData.currentPage - 2 && i <= paginationData.currentPage + 2)) {
+            html += `<li class="page-item ${i === paginationData.currentPage ? 'active' : ''}">
+                        <button class="page-link" data-page="${i}">${i}</button>
+                    </li>`;
+        } else if (i === paginationData.currentPage - 3 || i === paginationData.currentPage + 3) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+
+    if (paginationData.hasNextPage) {
+        html += `<li class="page-item"><button class="page-link" data-page="${paginationData.nextPage}">Suivant</button></li>`;
+    }
+
+    container.innerHTML = html;
+}
+
+function updateActiveCategory(categoryId) {
+    const buttons = document.querySelectorAll('#category-buttons .category-btn');
+    const select = document.querySelector('select[name="category"]');
+    
+    if (buttons) {
+        buttons.forEach(button => {
+            button.classList.remove('active');
+            if (categoryId === null && button.dataset.category === '') {
+                button.classList.add('active');
+            } else if (button.dataset.category === categoryId?.toString()) {
+                button.classList.add('active');
+            }
         });
     }
-});
+    
+    if (select) {
+        select.value = categoryId || '';
+    }
+}
+
+function updateArticlesDisplay(articles) {
+    const container = document.getElementById('article');
+    if (!container) return;
+
+    if (!articles || articles.length === 0) {
+        container.innerHTML = '<div class="col-12"><p class="alert alert-info">Aucun article ne correspond à votre recherche</p></div>';
+        const paginationContainer = document.querySelector('#pagination-container .pagination');
+        if (paginationContainer) {
+            paginationContainer.innerHTML = '';
+        }
+        return;
+    }
+
+    let html = '';
+    for (let i = 0; i < articles.length; i += 3) {
+        html += '<div class="row mb-4 justify-content-start">';
+        for (let j = 0; j < 3 && (i + j) < articles.length; j++) {
+            html += displayArticle(articles[i + j]);
+        }
+        html += '</div>';
+    }
+    
+    container.innerHTML = html;
+    setupQuantityControls(container);
+    setupAddToCartButtons();
+}
+
+function setupQuantityControls(container) {
+    // Gestion des boutons +/- 
+    container.querySelectorAll('.quantity-btn').forEach(button => {
+        button.addEventListener('click', (event) => {
+            const input = event.target.closest('.input-group').querySelector('.quantity-input');
+            const action = event.target.dataset.action;
+            const currentValue = parseInt(input.value);
+            const maxStock = parseInt(input.dataset.stock);
+
+            if (action === 'decrease' && currentValue > 1) {
+                input.value = currentValue - 1;
+            } else if (action === 'increase' && currentValue < maxStock) {
+                input.value = currentValue + 1;
+            }
+
+            const result = handleQuantityInput(input);
+            if (!result.success) {
+                showToast(result.message, 'warning');
+            }
+        });
+    });
+
+    // Gestion de l'input direct
+    container.querySelectorAll('.quantity-input').forEach(input => {
+        input.addEventListener('change', (event) => {
+            const result = handleQuantityInput(event.target);
+            if (!result.success) {
+                showToast(result.message, 'warning');
+            }
+        });
+    });
+}
+
+function setupAddToCartButtons() {
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const articleId = event.target.dataset.articleId;
+            const quantityInput = document.querySelector(`#quantity-${articleId}`);
+            
+            if (!quantityInput) {
+                showToast('Erreur: impossible de trouver la quantité', 'danger');
+                return;
+            }
+
+            const result = handleQuantityInput(quantityInput);
+            if (!result.success) {
+                showToast(result.message, 'warning');
+                return;
+            }
+            
+            try {
+                await addToCart({
+                    articleId: parseInt(articleId),
+                    quantite: parseInt(quantityInput.value)
+                });
+            } catch (error) {
+                console.error('Erreur ajout panier:', error);
+                showToast('Erreur lors de l\'ajout au panier', 'danger');
+            }
+        });
+    });
+}

@@ -1,6 +1,3 @@
-<?php
-require("_partials/errors.php");
-?>
 <div class="row">
     <div class="col">
         <div class="h1 pt-2 pb-2 text-center">
@@ -21,12 +18,12 @@ require("_partials/errors.php");
             <div class="mb-3">
                 <label for="mot_de_passe" class="form-label">Mot de passe</label>
                 <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" 
-                       <?php echo (!isset($user['id_utilisateur'])) ? 'required' : ''; ?> autocomplete="new-password">
+                       <?php echo (!isset($user['id_utilisateur'])) ? 'required' : ''; ?> autocomplete="off">
             </div>
             <div class="mb-3">
                 <label for="confirmation" class="form-label">Confirmation du mot de passe</label>
                 <input type="password" class="form-control" id="confirmation" name="confirmation" 
-                       <?php echo (!isset($user['id_utilisateur'])) ? 'required' : ''; ?> autocomplete="new-password">
+                       <?php echo (!isset($user['id_utilisateur'])) ? 'required' : ''; ?> autocomplete="off">
             </div>
             <div class="mb-3">
                 <label for="role" class="form-label">Rôle</label>

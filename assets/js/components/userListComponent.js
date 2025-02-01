@@ -1,266 +1,226 @@
 import { getUtilisateurs, updateUtilisateur, deleteUtilisateur, createUtilisateur } from '../services/person.js';
 import { showToast } from "./shared/toast.js";
 
+const loadURLParams = () => ({
+    page: parseInt(new URLSearchParams(window.location.search).get('currentPage')) || 1,
+    search: new URLSearchParams(window.location.search).get('search') || ''
+});
+
+const debounce = (func, wait) => {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), wait);
+    };
+};
+
+const updateURL = (page, search = '') => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', 'userlist');
+    url.searchParams.set('currentPage', page);
+    search ? url.searchParams.set('search', search) : url.searchParams.delete('search');
+    window.history.pushState({}, '', url);
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
-    const userListContainer = document.getElementById('user-list-container');
-    const paginationContainer = document.getElementById('pagination-container');
-    let currentSearch = '';
-    const searchInput = document.getElementById('searchInput');
-    const searchButton = document.getElementById('searchButton');
+    const elements = {
+        userListContainer: document.getElementById('user-list-container'),
+        paginationContainer: document.getElementById('pagination-container'),
+        searchInput: document.getElementById('searchInput'),
+        searchButton: document.getElementById('searchButton'),
+        editUserForm: document.getElementById('editUserForm'),
+        createUserForm: document.getElementById('createUserForm'),
+        spinner: null
+    };
 
-    if (!userListContainer || !paginationContainer) {
-        console.error('Conteneurs nécessaires non trouvés dans le DOM');
-        return;
-    }
+    let state = { currentPage: 1, currentSearch: '' };
 
-    // Ajouter le spinner
-    const spinnerHTML = `
-        <div id="spinner" class="spinner-border text-primary d-none" role="status">
-            <span class="visually-hidden">Chargement...</span>
-        </div>
-    `;
-    userListContainer.insertAdjacentHTML('beforebegin', spinnerHTML);
-    const spinner = document.querySelector('#spinner');
+    if (!elements.userListContainer || !elements.paginationContainer) return;
 
-    let currentPage = 1;
+    elements.userListContainer.insertAdjacentHTML('beforebegin',
+        '<div id="spinner" class="spinner-border text-primary d-none" role="status">' +
+        '<span class="visually-hidden">Chargement...</span></div>'
+    );
+    elements.spinner = document.querySelector('#spinner');
 
-    // Déplacer refreshUserList en dehors du DOMContentLoaded pour le rendre accessible globalement
-    // Fonction debounce pour la recherche
-    const debounce = (func, wait) => {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
+    const handleSearch = debounce(async () => {
+        state.currentSearch = elements.searchInput.value.trim();
+        await refreshUserList(1);
+    }, 300);
+
+    const initEditModal = () => ({
+        editModal: new bootstrap.Modal(document.getElementById('editUserModal')),
+        editForm: document.getElementById('editUserForm'),
+        inputs: {
+            nom: document.getElementById('edit_nom'),
+            email: document.getElementById('edit_email'),
+            role: document.getElementById('edit_role'),
+            password: document.getElementById('edit_password')
+        }
+    });
+
+    const handleEdit = (() => {
+        const modal = initEditModal();
+        return (e) => {
+            const target = e.target.closest('[data-id]');
+            if (!target) return;
+
+            const row = target.closest('tr');
+            if (!row) return;
+
+            const data = {
+                nom: row.cells[1].textContent.trim(),
+                email: row.cells[2].textContent.trim(),
+                role: row.cells[3].textContent.trim()
             };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
+
+            Object.entries(data).forEach(([key, value]) => modal.inputs[key] && (modal.inputs[key].value = value));
+            modal.inputs.password.value = '';
+            modal.editForm.dataset.userId = target.dataset.id;
+            modal.editModal.show();
         };
-    };
+    })();
 
-    // Fonction pour mettre à jour l'URL
-    const updateURL = (page, search = '') => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('page', 'userlist');
-        url.searchParams.set('currentPage', page);
-        if (search) {
-            url.searchParams.set('search', search);
-        } else {
-            url.searchParams.delete('search');
-        }
-        window.history.pushState({}, '', url);
-    };
+    const handleDelete = (() => {
+        let isProcessing = false;
+        return async (e) => {
+            if (isProcessing) return;
+            const target = e.target.closest('[data-id]');
+            if (!target || !confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
 
-    // Fonction pour lire les paramètres de l'URL au chargement
-    const loadURLParams = () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const pageFromURL = parseInt(urlParams.get('currentPage')) || 1;
-        const searchFromURL = urlParams.get('search') || '';
-        
-        if (searchFromURL) {
-            searchInput.value = searchFromURL;
-            currentSearch = searchFromURL;
-        }
-        
-        return { page: pageFromURL, search: searchFromURL };
-    };
+            isProcessing = true;
+            target.disabled = true;
 
-    // Modifier refreshUserList pour inclure la mise à jour de l'URL
-    window.refreshUserList = async (page = 1) => {
-        if (spinner) spinner.classList.remove('d-none');
-        try {
-            const data = await getUtilisateurs(page, currentSearch);
-            updateURL(page, currentSearch);
-            
-            const tableHtml = `
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Nom</th>
-                            <th>Email</th>
-                            <th>Rôle</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${data.users.map(user => `
-                            <tr>
-                                <td>${user.id_utilisateur}</td>
-                                <td>${user.nom}</td>
-                                <td>${user.email}</td>
-                                <td>${user.role}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary me-2 edit-user" data-id="${user.id_utilisateur}">
-                                        <i class="fa fa-edit"></i> Modifier
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger delete-user" data-id="${user.id_utilisateur}">
-                                        <i class="fa fa-trash"></i> Supprimer
-                                    </button>
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            userListContainer.innerHTML = tableHtml;
+            try {
+                const result = await deleteUtilisateur(target.dataset.id);
+                if (result.success) {
+                    const row = target.closest('tr');
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        const remainingRows = elements.userListContainer.querySelectorAll('tbody tr').length;
+                        if (remainingRows === 0) refreshUserList(Math.max(1, state.currentPage - 1));
+                    }, 300);
+                    showToast('Utilisateur supprimé avec succès', 'bg-success');
+                }
+            } catch (error) {
+                showToast(error.message, 'bg-danger');
+            } finally {
+                isProcessing = false;
+                target.disabled = false;
+            }
+        };
+    })();
 
-            attachEventListeners();
-            updatePagination(data.currentPage, data.totalPages);
-        } catch (error) {
-            showToast(error.message, 'bg-danger');
-        } finally {
-            if (spinner) spinner.classList.add('d-none');
-        }
-    };
+    const renderUserList = data => {
+        let html = '<table class="table"><thead><tr>' +
+            '<th>ID</th><th>Nom</th><th>Email</th><th>Rôle</th><th>Actions</th>' +
+            '</tr></thead><tbody>';
 
-    const attachEventListeners = () => {
-        document.querySelectorAll('.edit-user').forEach(button => {
-            button.addEventListener('click', handleEdit);
+        data.users.forEach(user => {
+            html += '<tr><td>' + user.id_utilisateur + '</td><td>' + user.nom + 
+                '</td><td>' + user.email + '</td><td>' + user.role + '</td><td class="text-end">' +
+                '<button class="btn btn-sm btn-outline-primary me-2 edit-user" data-id="' + user.id_utilisateur + 
+                '"><i class="fa fa-edit"></i> Modifier</button>' +
+                '<button class="btn btn-sm btn-outline-danger delete-user" data-id="' + user.id_utilisateur + 
+                '"><i class="fa fa-trash"></i> Supprimer</button></td></tr>';
         });
 
-        document.querySelectorAll('.delete-user').forEach(button => {
-            button.addEventListener('click', handleDelete);
-        });
+        elements.userListContainer.innerHTML = html + '</tbody></table>';
+
+        const handleTableClick = debounce(e => {
+            const editButton = e.target.closest('.edit-user');
+            const deleteButton = e.target.closest('.delete-user');
+            if (editButton) { e.preventDefault(); handleEdit(e); }
+            if (deleteButton) { e.preventDefault(); handleDelete(e); }
+        }, 100);
+
+        elements.userListContainer.removeEventListener('click', handleTableClick);
+        elements.userListContainer.addEventListener('click', handleTableClick);
     };
 
     const updatePagination = (currentPage, totalPages) => {
-        if (totalPages <= 1) {
-            paginationContainer.innerHTML = '';
-            return;
-        }
+        if (totalPages <= 1) return elements.paginationContainer.innerHTML = '';
 
-        const pages = [];
+        let html = '<nav><ul class="pagination justify-content-center">' +
+            '<li class="page-item ' + (currentPage === 1 ? 'disabled' : '') + 
+            '"><button class="page-link" data-page="' + (currentPage - 1) + '">&laquo;</button></li>';
+
         for (let i = 1; i <= totalPages; i++) {
-            pages.push(`
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <button class="page-link" data-page="${i}">${i}</button>
-                </li>
-            `);
+            html += '<li class="page-item ' + (i === currentPage ? 'active' : '') + 
+                '"><button class="page-link" data-page="' + i + '">' + i + '</button></li>';
         }
 
-        const paginationHtml = `
-            <nav aria-label="Navigation des pages">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
-                        <button class="page-link" data-page="${currentPage - 1}">&laquo; Précédent</button>
-                    </li>
-                    ${pages.join('')}
-                    <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
-                        <button class="page-link" data-page="${currentPage + 1}">Suivant &raquo;</button>
-                    </li>
-                </ul>
-            </nav>
-        `;
+        html += '<li class="page-item ' + (currentPage === totalPages ? 'disabled' : '') + 
+            '"><button class="page-link" data-page="' + (currentPage + 1) + '">&raquo;</button></li></ul></nav>';
 
-        paginationContainer.innerHTML = paginationHtml;
+        elements.paginationContainer.innerHTML = html;
 
-        paginationContainer.querySelectorAll('.page-link').forEach(button => {
-            button.addEventListener('click', async (e) => {
+        elements.paginationContainer.querySelectorAll('.page-link').forEach(button => {
+            button.addEventListener('click', async e => {
                 const newPage = parseInt(e.target.dataset.page);
                 if (!isNaN(newPage) && newPage > 0 && newPage <= totalPages) {
-                    currentPage = newPage;
-                    await refreshUserList(currentPage);
+                    state.currentPage = newPage;
+                    await refreshUserList(newPage);
                 }
             });
         });
     };
 
-    const handleEdit = (e) => {
-        const userId = e.target.dataset.id;
-        const editModal = new bootstrap.Modal(document.getElementById('editUserModal'));
-        
-        const row = e.target.closest('tr');
-        const nom = row.cells[1].textContent;
-        const email = row.cells[2].textContent;
-        const role = row.cells[3].textContent;
-
-        document.getElementById('edit_nom').value = nom;
-        document.getElementById('edit_email').value = email;
-        document.getElementById('edit_role').value = role;
-        document.getElementById('editUserForm').dataset.userId = userId;
-
-        editModal.show();
-    };
-
-    const handleDelete = async (e) => {
-        const button = e.target;
-        const userId = button.dataset.id;
-        
-        if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
-            button.disabled = true;
-            try {
-                const result = await deleteUtilisateur(userId);
-                if (result.success) {
-                    await refreshUserList(currentPage);
-                    showToast('Utilisateur supprimé avec succès', 'bg-success');
-                } else if (!result.cancelled) {
-                    showToast(result.message || 'Erreur lors de la suppression', 'bg-danger');
-                }
-            } catch (error) {
-                showToast(error.message, 'bg-danger');
-            } finally {
-                button.disabled = false;
-            }
-        }
-    };
-
-    // Initialisation avec les paramètres de l'URL
-    const { page, search } = loadURLParams();
-    await refreshUserList(page);
-
-    document.getElementById('editUserForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        const submitButton = form.querySelector('button[type="submit"]');
-        submitButton.disabled = true;
-
+    window.refreshUserList = async (page = 1) => {
+        elements.spinner?.classList.remove('d-none');
         try {
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
-
-            const userId = form.dataset.userId;
-            const result = await updateUtilisateur(form, userId);
-            
-            if (result.success) {
-                const editModal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
-                editModal.hide();
-                
-                if (result.redirectUrl) {
-                    window.location.href = result.redirectUrl;
-                    return;
-                }
-                
-                await refreshUserList(currentPage);
-                showToast('Utilisateur modifié avec succès', 'bg-success');
-            } else if (result.errors) {
-                showToast(`Erreurs : ${result.errors.join(', ')}`, 'bg-danger');
-            }
+            const data = await getUtilisateurs(page, state.currentSearch);
+            updateURL(page, state.currentSearch);
+            renderUserList(data);
+            updatePagination(data.currentPage, data.totalPages);
         } catch (error) {
             showToast(error.message, 'bg-danger');
         } finally {
-            submitButton.disabled = false;
+            elements.spinner?.classList.add('d-none');
         }
-    });
+    };
 
-    // Remplacer le double gestionnaire d'événements par un seul
-    const createUserForm = document.getElementById('createUserForm');
-    if (createUserForm) {
-        createUserForm.addEventListener('submit', async (e) => {
+    [['input', handleSearch], ['click', handleSearch]].forEach(([event, handler]) => 
+        elements.searchInput.addEventListener(event, event === 'input' ? handler : e => e.key === 'Enter' && (e.preventDefault(), handler()))
+    );
+
+    if (elements.editUserForm) {
+        elements.editUserForm.addEventListener('submit', async e => {
             e.preventDefault();
             const form = e.target;
             const submitButton = form.querySelector('button[type="submit"]');
             submitButton.disabled = true;
 
             try {
-                const result = await createUtilisateur(form);
-                if (result && result.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('createUserModal'));
-                    modal.hide();
-                    form.reset();
-                    await window.refreshUserList(1);
+                if (!form.checkValidity()) return form.reportValidity();
+                const result = await updateUtilisateur(form, form.dataset.userId);
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    if (result.redirectUrl) return window.location.href = result.redirectUrl;
+                    await refreshUserList(state.currentPage);
+                    showToast('Utilisateur modifié avec succès', 'bg-success');
+                }
+            } catch (error) {
+                showToast(error.message, 'bg-danger');
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+    }
+
+    if (elements.createUserForm) {
+        elements.createUserForm.addEventListener('submit', async e => {
+            e.preventDefault();
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+
+            try {
+                const result = await createUtilisateur(e.target);
+                if (result?.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+                    e.target.reset();
+                    await refreshUserList(1);
                     showToast('Utilisateur créé avec succès', 'bg-success');
                 }
             } catch (error) {
@@ -271,55 +231,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Gestionnaire de recherche
-    const handleSearch = debounce(async () => {
-        currentSearch = searchInput.value.trim();
-        await refreshUserList(1); // Retour à la première page lors d'une recherche
-    }, 300);
-
-    // Événements de recherche
-    searchInput.addEventListener('input', handleSearch);
-    searchButton.addEventListener('click', handleSearch);
-
-    // Ajout de la recherche par touche Entrée
-    searchInput.addEventListener('keypress', async (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            await handleSearch();
-        }
-    });
-});
-
-// Supprimer cette fonction car elle fait double emploi
-// async function handleCreateUser(event) { ... }
-
-// Dans la fonction de validation du formulaire
-const validateNom = (nom) => {
-    // Vérification simple de la longueur
-    if (nom.length < 2 || nom.length > 50) {
-        return false;
+    const { page, search } = loadURLParams();
+    if (search) {
+        elements.searchInput.value = search;
+        state.currentSearch = search;
     }
-    // Vérification des caractères autorisés
-    return /^[a-zA-Z0-9\s\-']+$/.test(nom);
-};
-
-// Dans l'événement submit du formulaire
-document.getElementById('createUserForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const submitButton = form.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-
-    try {
-        const nom = form.querySelector('[name="nom"]').value.trim();
-        
-        if (!validateNom(nom)) {
-            throw new Error('Le nom contient des caractères non autorisés ou est trop court/long');
-        }
-        // ... reste du code ...
-    } catch (error) {
-        showToast(error.message, 'bg-danger');
-    } finally {
-        submitButton.disabled = false;
-    }
+    await refreshUserList(page);
 });

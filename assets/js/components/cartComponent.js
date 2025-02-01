@@ -5,7 +5,7 @@ import {
     validateOrder,
     getOrders,
     generateCartHTML,
-    generateSummaryHTML,
+    generateSummaryHTML,  // Cette importation est utilisée
     updateCartCounter,
     showToast
 } from '../services/cartService.js';
@@ -15,25 +15,49 @@ export function cartCrud() {
         async handleUpdateQuantity(button) {
             const id = button.dataset.id;
             const input = button.parentElement.querySelector(`input[data-id="${id}"]`);
+            
+            if (!input) {
+                showToast('Erreur: élément non trouvé', 'danger');
+                return;
+            }
+
             const newQuantity = parseInt(input.value);
+            const maxStock = parseInt(input.dataset.stock);
+
+            // Validation de la quantité
+            if (isNaN(newQuantity) || newQuantity < 1) {
+                showToast('Quantité invalide', 'danger');
+                return;
+            }
+
+            if (newQuantity > maxStock) {
+                showToast('Stock insuffisant', 'warning');
+                input.value = maxStock;
+                return;
+            }
 
             try {
-                await updateCartQuantity(id, newQuantity);
-                await renderCart();
-                showToast('Quantité mise à jour', 'success');
+                const result = await updateCartQuantity(id, newQuantity);
+                if (result.success) {
+                    await renderCart();
+                    showToast('Quantité mise à jour', 'success');
+                } else {
+                    showToast(result.message || 'Erreur de mise à jour', 'danger');
+                }
             } catch (error) {
+                console.error('Erreur mise à jour quantité:', error);
                 showToast('Erreur lors de la mise à jour', 'danger');
             }
         },
 
         async handleClearCart() {
-            const confirmed = await showConfirmModal('Êtes-vous sûr de vouloir vider votre panier ?');
-            if (confirmed) {
+            if (confirm('Êtes-vous sûr de vouloir vider votre panier ?')) {
                 try {
                     await clearCart();
                     await renderCart();
                     showToast('Le panier a été vidé', 'success');
                 } catch (error) {
+                    console.error('Erreur vidage panier:', error);
                     showToast('Erreur lors du vidage du panier', 'danger');
                 }
             }
@@ -41,20 +65,33 @@ export function cartCrud() {
 
         async handleValidateCart() {
             try {
-                const orderData = {
-                    userId: document.querySelector('#cart-container').dataset.userId,
-                };
+                const paymentData = await showPaymentModal();
+                
+                const response = await fetch('index.php?controller=cartOrder&action=validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        paymentInfo: paymentData
+                    })
+                });
 
-                const result = await validateOrder(orderData);
+                const result = await response.json();
+
                 if (result.success) {
                     showToast('Commande validée avec succès!', 'success');
-                    await displayOrderDetails(orderData.userId);
+                    // Redirection vers l'accueil après un court délai
+                    setTimeout(() => {
+                        window.location.href = 'index.php';
+                    }, 1500);
                 } else {
-                    showToast('Erreur lors de la validation de la commande', 'danger');
+                    showToast(result.error || 'Erreur lors de la validation', 'danger');
                 }
             } catch (error) {
-                console.error('Error validating order:', error);
-                showToast('Erreur lors de la validation de la commande', 'danger');
+                console.error('Error validating cart:', error);
+                showToast('Erreur lors de la validation du panier', 'danger');
             }
         },
 
@@ -105,8 +142,37 @@ export async function showCart() {
     await renderCart();
     const crud = cartCrud();
 
-    document.addEventListener('click', async (event) => {
+    // Gestionnaire pour le bouton de validation
+    const handleValidateClick = async (event) => {
+        if (event.target.classList.contains('validate-cart')) {
+            event.preventDefault();
+            await crud.handleValidateCart();
+        }
+    };
+
+    // Nettoyage et ajout des gestionnaires
+    document.removeEventListener('click', handleValidateClick);
+    document.addEventListener('click', handleValidateClick);
+
+    // Gestionnaire pour le bouton "Vider le panier"
+    const clearCartButton = document.getElementById('clear-cart');
+    if (clearCartButton) {
+        const newButton = clearCartButton.cloneNode(true);
+        clearCartButton.parentNode.replaceChild(newButton, clearCartButton);
+        newButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await crud.handleClearCart();
+        });
+    }
+
+    // Gestionnaire pour les autres actions
+    const handleClick = async (event) => {
         const target = event.target;
+
+        if (target.id === 'clear-cart' || target.closest('#clear-cart')) {
+            return;
+        }
 
         const actions = {
             'remove-item': async (element) => {
@@ -119,29 +185,52 @@ export async function showCart() {
                     showToast('Erreur lors de la suppression: ' + error.message, 'danger');
                 }
             },
-            'decrease-quantity, increase-quantity': (element) => {
-                crud.handleQuantityButton(element);
+            'increase-quantity': (element) => {
+                const input = element.parentElement.querySelector('input[type="number"]');
+                const currentValue = parseInt(input.value);
+                const maxStock = parseInt(input.dataset.stock);
+                if (currentValue < maxStock) {
+                    input.value = currentValue + 1;
+                }
             },
-            'update-quantity': (element) => {
-                crud.handleUpdateQuantity(element);
+            'decrease-quantity': (element) => {
+                const input = element.parentElement.querySelector('input[type="number"]');
+                const currentValue = parseInt(input.value);
+                if (currentValue > 1) {
+                    input.value = currentValue - 1;
+                }
             },
-            'clear-cart': () => {
-                crud.handleClearCart();
+            'update-quantity': async (element) => {
+                const id = element.dataset.id;
+                const input = element.parentElement.querySelector(`input[data-id="${id}"]`);
+                const newQuantity = parseInt(input.value);
+                
+                try {
+                    await updateCartQuantity(id, newQuantity);
+                    await renderCart();
+                    showToast('Quantité mise à jour', 'success');
+                } catch (error) {
+                    showToast('Erreur lors de la mise à jour: ' + error.message, 'danger');
+                }
             },
-            'validate-cart': () => {
-                crud.handleValidateCart();
-            }
+            'validate-cart': () => crud.handleValidateCart()
         };
 
-        for (const [selector, handler] of Object.entries(actions)) {
-            const element = target.closest(`.${selector}`);
-            if (element) {
-                await handler(element);
+        for (const [className, handler] of Object.entries(actions)) {
+            if (target.classList.contains(className)) {
+                event.preventDefault();
+                event.stopPropagation();
+                await handler(target);
                 break;
             }
         }
-    });
+    };
 
+    // Nettoyage et ajout du gestionnaire principal
+    document.removeEventListener('click', handleClick);
+    document.addEventListener('click', handleClick);
+
+    // Gestionnaire pour les inputs
     document.addEventListener('change', (event) => {
         if (event.target.matches('input[type="number"]')) {
             crud.handleQuantityInput(event.target);
@@ -153,88 +242,54 @@ async function renderCart() {
     const cartContainer = document.querySelector('#cart-container');
     const summaryContainer = document.querySelector('#cart-summary');
     
-    if (!cartContainer) return;
+    if (!cartContainer) {
+        console.error('Container du panier non trouvé');
+        return;
+    }
 
     try {
-        const response = await fetch(`index.php?controller=cartOrder&action=show`, {
+        const response = await fetch('index.php?controller=cartOrder&action=show', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
                 'Accept': 'application/json'
-            }
+            },
+            credentials: 'same-origin'
         });
-        
-        if (!response.ok) {
-            throw new Error('Erreur serveur');
-        }
 
-        const cartData = await response.json();
+        // Log pour debug
+        console.log('Content-Type:', response.headers.get('content-type'));
         
-        if (summaryContainer) {
-            summaryContainer.innerHTML = generateSummaryHTML(cartData);
-        }
+        let data;
+        try {
+            data = await response.text();
+            console.log('Response raw:', data);
+            const cartData = JSON.parse(data);
+            
+            // Mise à jour de l'interface
+            if (summaryContainer) {
+                summaryContainer.innerHTML = generateSummaryHTML(cartData);
+            }
 
-        if (cartData.items && Array.isArray(cartData.items)) {
-            cartContainer.innerHTML = cartData.items.length > 0 
-                ? generateCartHTML(cartData.items) 
+            cartContainer.innerHTML = cartData.items?.length > 0 
+                ? generateCartHTML(cartData.items)
                 : '<p class="text-center">Votre panier est vide.</p>';
-            // Suppression de la ligne avec attachEventListeners car nous utilisons la délégation d'événements
-        } else {
-            cartContainer.innerHTML = '<p class="text-center">Votre panier est vide.</p>';
+
+            updateCartCounter(cartData.items || []);
+            return cartData;
+        } catch (parseError) {
+            console.error('Parse error:', parseError);
+            throw new Error(`Erreur de parsing: ${data}`);
         }
-
-        updateCartCounter(cartData.items || []);
-        return cartData;
-
     } catch (error) {
-        console.error('Error rendering cart:', error);
-        cartContainer.innerHTML = '<p class="text-danger">Erreur lors du chargement du panier</p>';
+        console.error('Erreur détaillée du rendu du panier:', error);
+        cartContainer.innerHTML = `<p class="text-danger">Erreur lors du chargement du panier: ${error.message}</p>`;
         if (summaryContainer) {
             summaryContainer.innerHTML = '<p class="text-danger">Erreur de chargement</p>';
         }
         throw error;
     }
-}
-
-function showModal({ title, content, buttons }) {
-    return new Promise((resolve) => {
-        const modal = `
-            <div class="modal" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">${title}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">${content}</div>
-                        <div class="modal-footer">${buttons}</div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        const modalElement = document.createElement('div');
-        modalElement.innerHTML = modal;
-        document.body.appendChild(modalElement.firstElementChild);
-
-        const modalInstance = new bootstrap.Modal(document.querySelector('.modal'));
-
-        // Gestionnaire pour les boutons
-        document.querySelector('.modal').addEventListener('click', (e) => {
-            if (e.target.matches('[data-modal-action]')) {
-                modalInstance.hide();
-                resolve(e.target.dataset.modalAction === 'confirm');
-            }
-        });
-
-        document.querySelector('.modal').addEventListener('hidden.bs.modal', function () {
-            this.remove();
-            resolve(false);
-        });
-
-        modalInstance.show();
-    });
 }
 
 async function displayOrderDetails(userId) {
@@ -260,14 +315,71 @@ async function displayOrderDetails(userId) {
     }
 }
 
-function showConfirmModal(message) {
-    return showModal({
-        title: 'Confirmation',
-        content: `<p>${message}</p>`,
-        buttons: `
-            <button type="button" class="btn btn-secondary" data-modal-action="cancel">Annuler</button>
-            <button type="button" class="btn btn-primary" data-modal-action="confirm">Confirmer</button>
-        `
+async function showPaymentModal() {
+    return new Promise((resolve) => {
+        const modalHTML = `
+            <div class="modal fade" id="paymentModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Informations de paiement</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="paymentForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Nom</label>
+                                    <input type="text" class="form-control" name="nom" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Prénom</label>
+                                    <input type="text" class="form-control" name="prenom" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Adresse</label>
+                                    <textarea class="form-control" name="adresse" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Numéro de carte</label>
+                                    <input type="text" class="form-control" name="carte" required pattern="[0-9]{16}">
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Date d'expiration</label>
+                                        <input type="text" class="form-control" name="expiration" required pattern="[0-9]{2}/[0-9]{2}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">CVV</label>
+                                        <input type="text" class="form-control" name="cvv" required pattern="[0-9]{3}">
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <button type="button" class="btn btn-primary" id="confirmPayment">Confirmer</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        const form = document.getElementById('paymentForm');
+
+        document.getElementById('confirmPayment').addEventListener('click', () => {
+            if (form.checkValidity()) {
+                const formData = new FormData(form);
+                const paymentData = Object.fromEntries(formData.entries());
+                modal.hide();
+                document.getElementById('paymentModal').remove();
+                resolve(paymentData);
+            } else {
+                form.reportValidity();
+            }
+        });
+
+        modal.show();
     });
 }
 

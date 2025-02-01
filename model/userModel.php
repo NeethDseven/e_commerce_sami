@@ -14,3 +14,8 @@ function getUserCount(PDO $pdo) {
     return $stmt->fetch(PDO::FETCH_ASSOC)['total'];
 }
 
+function isEmailExists(PDO $pdo, string $email): bool {
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM utilisateur WHERE email = :email');
+    $stmt->execute(['email' => $email]);
+    return (bool)$stmt->fetchColumn();
+}

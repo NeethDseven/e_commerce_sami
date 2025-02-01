@@ -1,32 +1,10 @@
-const BASE_URL = './ecommercesami/';
+const BASE_URL = '/projet/ecommercesami/';  // Correction du chemin de base
 const defaultHeaders = {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
     'Accept': 'application/json'
 };
 
-// Opérations CRUD sur le panier
-export async function addToCart(articleData) {
-    try {
-        const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=add`, {
-            method: 'POST',
-            headers: defaultHeaders,
-            body: JSON.stringify({
-                id_article: articleData.articleId,
-                quantite: articleData.quantite
-            })
-        });
-
-        const data = await response.json();
-        if (!response.ok || data.error) {
-            throw new Error(data.error || 'Erreur lors de l\'ajout au panier');
-        }
-
-        return data;
-    } catch (error) {
-        throw error;
-    }
-}
 
 export async function removeFromCart(idArticle) {
     const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=remove`, {  // Modifié de 'cart' à 'cartOrder'
@@ -44,19 +22,37 @@ export async function removeFromCart(idArticle) {
 }
 
 export async function updateCartQuantity(idArticle, newQuantity) {
-    const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=update`, {
-        method: 'POST',
-        headers: defaultHeaders,
-        body: JSON.stringify({
-            id_article: idArticle,
-            quantite: newQuantity
-        })
-    });
+    try {
+        // Vérification et conversion des valeurs
+        if (!idArticle || !newQuantity) {
+            throw new Error('ID article et quantité requis');
+        }
 
-    if (!response.ok) {
-        throw new Error('Failed to update cart quantity');
+        const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=update`, {
+            method: 'POST',
+            headers: defaultHeaders,
+            body: JSON.stringify({
+                id_article: parseInt(idArticle),
+                quantite: parseInt(newQuantity)
+            })
+        });
+
+        const data = await response.json().catch(() => null);
+        
+        if (!response.ok) {
+            console.log('Réponse serveur:', data); // Pour déboguer
+            throw new Error(data?.message || 'Erreur de mise à jour du panier');
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Détails de l\'erreur updateCartQuantity:', {
+            idArticle,
+            newQuantity,
+            error: error.message
+        });
+        throw error;
     }
-    return response.json();
 }
 
 export async function clearCart() {
@@ -101,13 +97,17 @@ export async function calculatePromotion(item) {
 
 export function generateCartHTML(items) {
     return items.map(item => {
-        // Vérification et conversion des valeurs
-        const quantity = parseInt(item.quantity) || 0;
+        // Correction des noms des propriétés pour correspondre à ceux du backend
+        const quantity = parseInt(item.quantite) || 0;
         const stock = parseInt(item.stock) || 0;
-        const price = parseFloat(item.price) || 0;
-        const name = item.name || 'Article sans nom';
+        const prixInitial = parseFloat(item.prix) || 0;
+        const prixFinal = parseFloat(item.prix_final) || prixInitial;
+        const name = item.nom || 'Article sans nom';
         const image = item.image || 'default-image.jpg';
-        const id = item.id || '';
+        const id = item.id_article || '';
+
+        // Calcul du prix à afficher
+        const priceToDisplay = prixFinal < prixInitial ? prixFinal : prixInitial;
 
         return `
         <div class="card mb-3">
@@ -118,7 +118,14 @@ export function generateCartHTML(items) {
                     </div>
                     <div class="col-md-4">
                         <h5 class="card-title">${name}</h5>
-                        <p class="card-text">${price.toFixed(2)}€</p>
+                        <p class="card-text">
+                            ${prixFinal < prixInitial ? `
+                                <del class="text-muted">${prixInitial.toFixed(2)}€</del>
+                                <span class="text-danger fw-bold">${prixFinal.toFixed(2)}€</span>
+                            ` : `
+                                <span>${priceToDisplay.toFixed(2)}€</span>
+                            `}
+                        </p>
                     </div>
                     <div class="col-md-4">
                         <div class="quantity-controls">
@@ -139,10 +146,21 @@ export function generateCartHTML(items) {
     }).join('');
 }
 
-export async function generateSummaryHTML(cartData) {
-    const total = cartData.total || 0;
-    const uniqueItemCount = cartData.items ? cartData.items.length : 0;
-    const totalQuantity = cartData.items ? cartData.items.reduce((sum, item) => sum + parseInt(item.quantite), 0) : 0;
+export function generateSummaryHTML(cartData) {
+    let total = 0;
+    const items = cartData.items || [];
+    
+    // Calcul correct du total
+    items.forEach(item => {
+        const quantity = parseInt(item.quantite) || 0;
+        const prixInitial = parseFloat(item.prix) || 0;
+        const prixFinal = parseFloat(item.prix_final) || prixInitial;
+        const priceToUse = prixFinal < prixInitial ? prixFinal : prixInitial;
+        total += priceToUse * quantity;
+    });
+
+    const uniqueItemCount = items.length;
+    const totalQuantity = items.reduce((sum, item) => sum + parseInt(item.quantite || 0), 0);
 
     return `
         <div class="card">
@@ -151,7 +169,7 @@ export async function generateSummaryHTML(cartData) {
                 <p>Articles différents : ${uniqueItemCount}</p>
                 <p>Quantité totale : ${totalQuantity} article(s)</p>
                 <p class="h4">Total : ${total.toFixed(2)} €</p>
-                ${uniqueItemCount > 0 ? '<button class="btn btn-primary" id="validate-cart">Valider la commande</button>' : ''}
+                ${uniqueItemCount > 0 ? '<button class="btn btn-primary validate-cart">Valider la commande</button>' : ''}
             </div>
         </div>
     `;
@@ -159,15 +177,36 @@ export async function generateSummaryHTML(cartData) {
 
 // Gestion des commandes
 export async function validateOrder(orderData) {
-    const response = await fetch('index.php?controller=order&action=validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-    });
-    if (!response.ok) {
-        throw new Error('Failed to validate order');
+    try {
+        console.log('Sending order data:', orderData); // Debug
+
+        const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=validate`, {
+            method: 'POST',
+            headers: {
+                ...defaultHeaders
+            },
+            credentials: 'include', // Important pour les sessions
+            body: JSON.stringify(orderData)
+        });
+
+        const data = await response.json();
+        console.log('Server response:', data); // Debug
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Stocker l'URL actuelle avant la redirection
+                const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `${BASE_URL}index.php?page=login&return=${returnUrl}`;
+                throw new Error('Session expirée, veuillez vous reconnecter');
+            }
+            throw new Error(data.error || 'Erreur lors de la validation de la commande');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Erreur validateOrder:', error);
+        throw error;
     }
-    return response.json();
 }
 
 export async function getOrders(userId) {
@@ -200,4 +239,33 @@ export function showToast(message, type = 'success') {
     
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();
+}
+
+export async function addToCart({ articleId, quantite }) {
+    try {
+        const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=add`, {
+            method: 'POST',
+            headers: defaultHeaders,
+            body: JSON.stringify({
+                id_article: articleId,
+                quantite: quantite
+            })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Erreur lors de l\'ajout au panier');
+        }
+
+        if (data.success) {
+            showToast('Article ajouté au panier', 'success');
+            updateCartCounter(data.items || []);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Erreur addToCart:', error);
+        throw error;
+    }
 }
