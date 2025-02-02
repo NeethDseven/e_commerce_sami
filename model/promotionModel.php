@@ -1,5 +1,4 @@
 <?php
-<<<<<<< HEAD
 
 function getActivePromotions(PDO $pdo): array {
     try {
@@ -53,27 +52,6 @@ function getActivePromotions(PDO $pdo): array {
         
     } catch (PDOException $e) {
         error_log("Error in getActivePromotions: " . $e->getMessage());
-=======
-function getActivePromotions(PDO $pdo) {
-    try {
-        $sql = "SELECT 
-                a.*,
-                p.prix_promotionnel,
-                p.date_debut,
-                p.date_fin,
-                ROUND(((a.prix - p.prix_promotionnel) / a.prix * 100), 2) as pourcentage_reduction
-                FROM article a 
-                INNER JOIN promotion p ON a.id_article = p.id_article 
-                WHERE CURRENT_DATE BETWEEN p.date_debut AND p.date_fin
-                ORDER BY pourcentage_reduction DESC";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-    } catch (PDOException $e) {
-        error_log("Erreur SQL dans getActivePromotions: " . $e->getMessage());
->>>>>>> origin/develop
         throw new Exception("Erreur lors de la récupération des promotions");
     }
 }

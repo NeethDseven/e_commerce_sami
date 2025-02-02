@@ -27,7 +27,6 @@ function verifyArticle($pdo, $idArticle) {
 
 function addToCart($pdo, $idArticle, $quantite) {
     try {
-<<<<<<< HEAD
         // Debug log
         error_log("Adding article to cart - Raw ID: " . var_export($idArticle, true));
         error_log("Adding article to cart - Type before conversion: " . gettype($idArticle));
@@ -86,42 +85,15 @@ function addToCart($pdo, $idArticle, $quantite) {
 
         $_SESSION['cart'][] = $cartItem;
         error_log("Cart after adding item: " . var_export($_SESSION['cart'], true));
-=======
-        // Utiliser la fonction unifiée
-        $stockDisponible = verifyArticle($pdo, $idArticle);
-
-        if ($stockDisponible <= 0) {
-            throw new Exception("Stock épuisé");
-        }
-
-        if ($quantite > $stockDisponible) {
-            throw new Exception("Stock insuffisant. Il ne reste que $stockDisponible article(s) disponible(s)");
-        }
-
-        // Ajouter au panier selon le type d'utilisateur
-        $result = isUserConnected() 
-            ? addToUserCart($pdo, $idArticle, $quantite)
-            : addToGuestCart($idArticle, $quantite);
-
-        if (!$result) {
-            throw new Exception("Erreur lors de l'ajout au panier");
-        }
->>>>>>> origin/develop
 
         return [
             'success' => true,
             'message' => 'Article ajouté au panier',
-<<<<<<< HEAD
             'article' => $cartItem
         ];
 
     } catch (Exception $e) {
         error_log("Error in addToCart: " . $e->getMessage());
-=======
-            'stock_restant' => $stockDisponible - $quantite
-        ];
-    } catch (Exception $e) {
->>>>>>> origin/develop
         throw new Exception($e->getMessage());
     }
 }
@@ -169,7 +141,6 @@ function addToUserCart($pdo, $idArticle, $quantite) {
     }
 }
 
-<<<<<<< HEAD
 function getGuestCart($pdo) {
     try {
         if (!isset($_SESSION['cart'])) {
@@ -191,23 +162,6 @@ function getGuestCart($pdo) {
         error_log('Erreur dans getGuestCart: ' . $e->getMessage());
         throw new Exception('Erreur lors de la récupération du panier');
     }
-=======
-function addToGuestCart($idArticle, $quantite) {
-    if (!isset($_SESSION['panier'])) {
-        $_SESSION['panier'] = [];
-    }
-    
-    if (!isset($_SESSION['panier'][$idArticle])) {
-        $_SESSION['panier'][$idArticle] = 0;
-    }
-    $_SESSION['panier'][$idArticle] += $quantite;
-
-    return [
-        'success' => true,
-        'guest_id' => getGuestIdentifier(),
-        'message' => 'Article ajouté au panier invité'
-    ];
->>>>>>> origin/develop
 }
 
 function getCart($pdo) {

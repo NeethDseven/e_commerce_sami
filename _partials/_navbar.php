@@ -50,14 +50,10 @@ if (headers_sent()) {
                 </li>
             </ul>
             <form class="d-flex" role="search" method="GET" action="index.php" id="navSearchForm">
-<<<<<<< HEAD
                 <?php 
                 $excludedPages = ['userlist', 'orderView', 'admin', 'categoryManagement', 'orderlist', 'orderList'];
                 if (!in_array($page, $excludedPages)): 
                 ?>
-=======
-                <?php if ($page !== 'userlist' && $page !== 'orderView' && $page !== 'admin' && $page !== 'categoryManagement'): ?>
->>>>>>> origin/develop
                     <select class="form-select me-2" name="category" id="navSearchCategory" data-current="<?php echo htmlspecialchars($_GET['category'] ?? ''); ?>">
                         <option value="">Categories</option>
                         <?php if (!empty($categories)): ?>

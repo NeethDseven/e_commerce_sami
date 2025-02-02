@@ -11,7 +11,6 @@ function getOrderById($orderId) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
-<<<<<<< HEAD
 function getOrderDetails($pdo, $orderId) {
     try {
         $stmt = $pdo->prepare("
@@ -68,18 +67,6 @@ function getOrderDetails($pdo, $orderId) {
         error_log("Erreur SQL dans getOrderDetails: " . $e->getMessage());
         throw new Exception("Erreur lors de la récupération des détails de la commande");
     }
-=======
-function getOrderDetails($orderId) {
-    global $pdo;
-    $stmt = $pdo->prepare("
-        SELECT article.prix as prix, article.nom, detail_commande.quantite
-        FROM detail_commande
-        JOIN article ON detail_commande.id_article = article.id_article
-        WHERE detail_commande.id_commande = ?
-    ");
-    $stmt->execute([$orderId]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
->>>>>>> origin/develop
 }
 
 function calculateOrderTotal($orderId) {
@@ -97,7 +84,6 @@ function calculateOrderTotal($orderId) {
 function updateOrderStatus($orderId, $newStatus) {
     global $pdo;
     try {
-<<<<<<< HEAD
         $orderId = intval($orderId);
         if (!$orderId || !isValidStatus($newStatus)) {
             error_log("Invalid status update parameters - orderId: $orderId, status: $newStatus");
@@ -135,15 +121,6 @@ function updateOrderStatus($orderId, $newStatus) {
         return true;
     } catch (PDOException $e) {
         error_log("Database error during status update: " . $e->getMessage());
-=======
-        if (!isValidStatus($newStatus)) {
-            return false;
-        }
-        $stmt = $pdo->prepare("UPDATE commande SET statut = ? WHERE id_commande = ?");
-        return $stmt->execute([$newStatus, $orderId]);
-    } catch (PDOException $e) {
-        error_log("Erreur lors de la mise à jour du statut: " . $e->getMessage());
->>>>>>> origin/develop
         return false;
     }
 }
@@ -186,7 +163,6 @@ function getOrdersByStatus($status = null) {
 
 // Fonction pour valider le statut
 function isValidStatus($status) {
-<<<<<<< HEAD
     $validStatuses = [
         'en cours',
         'validée',
@@ -231,29 +207,6 @@ function getAllOrders($pdo, $page = 1, $perPage = 15) {
         'pages' => ceil($totalRows / $perPage),
         'currentPage' => $page
     ];
-=======
-    return in_array($status, ['en cours', 'validée', 'annulée']);
-}
-
-function getAllOrders($pdo) {
-    try {
-        $stmt = $pdo->prepare("
-            SELECT 
-                c.id_commande,
-                c.date_commande,
-                c.statut,
-                u.nom as nom_utilisateur
-            FROM commande c
-            LEFT JOIN utilisateur u ON c.id_utilisateur = u.id_utilisateur
-            ORDER BY c.date_commande DESC
-        ");
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        error_log("Erreur lors de la récupération des commandes : " . $e->getMessage());
-        return [];
-    }
->>>>>>> origin/develop
 }
 
 function saveOrderDetails($pdo, $orderId, $paymentInfo) {

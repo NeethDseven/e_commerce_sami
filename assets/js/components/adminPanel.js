@@ -7,10 +7,6 @@ import {
     updatePagination,
 } from '../services/adminPanelService.js';
 
-<<<<<<< HEAD
-=======
-// Variables globales
->>>>>>> origin/develop
 const state = {
     searchTerm: '',
     category: '',
@@ -18,10 +14,6 @@ const state = {
     showOnlyPromos: false
 };
 
-<<<<<<< HEAD
-=======
-// Utilitaires
->>>>>>> origin/develop
 const showToast = (message, type = 'success') => {
     const toastEl = document.createElement('div');
     toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
@@ -42,19 +34,11 @@ const handlePromotionFields = (show) => {
     const promotionFields = document.getElementById('promotion_fields');
     promotionFields.style.display = show ? 'block' : 'none';
     
-<<<<<<< HEAD
-=======
-    // Modifier la gestion des champs required
->>>>>>> origin/develop
     promotionFields.querySelectorAll('input').forEach(field => {
         if (show) {
             field.setAttribute('required', 'required');
         } else {
             field.removeAttribute('required');
-<<<<<<< HEAD
-=======
-            // Ne pas vider les valeurs ici
->>>>>>> origin/develop
         }
     });
 };
@@ -69,10 +53,6 @@ const calculatePromotionalPrice = (prix, reduction) => {
     }
 };
 
-<<<<<<< HEAD
-=======
-// Gestionnaire principal
->>>>>>> origin/develop
 document.addEventListener('DOMContentLoaded', async () => {
     const elements = {
         form: document.getElementById('articleForm'),
@@ -88,15 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     };
 
-<<<<<<< HEAD
     elements.promoCheckbox?.addEventListener('change', (e) => {
         handlePromotionFields(e.target.checked);
-=======
-    // Gestionnaires d'événements
-    elements.promoCheckbox?.addEventListener('change', (e) => {
-        handlePromotionFields(e.target.checked);
-        // Réinitialiser le message de prix calculé si on désactive les promotions
->>>>>>> origin/develop
         if (!e.target.checked) {
             const prixCalculeDiv = document.getElementById('prix_calcule');
             if (prixCalculeDiv) {
@@ -116,19 +89,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         if (!isNaN(reduction)) {
-<<<<<<< HEAD
             reduction = Math.min(60, Math.max(0, reduction));
             e.target.value = reduction.toString();
-=======
-            // Garder la précision décimale
-            reduction = Math.min(60, Math.max(0, reduction));
-            e.target.value = reduction.toString(); // Garder la valeur exacte
->>>>>>> origin/develop
             calculatePromotionalPrice(prix, reduction);
         }
     });
 
-<<<<<<< HEAD
     elements.modal.addEventListener('show.bs.modal', event => {
         const button = event.relatedTarget;
         elements.form.reset();
@@ -136,18 +102,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('id_article').value = '';
         
         if (!button?.dataset.bsArticle) {
-=======
-    // Modal handler
-    elements.modal.addEventListener('show.bs.modal', event => {
-        const button = event.relatedTarget;
-        elements.form.reset(); // Reset le formulaire d'abord
-        
-        // Réinitialiser explicitement l'ID
-        document.getElementById('id_article').value = '';
-        
-        if (!button?.dataset.bsArticle) {
-            // Mode création
->>>>>>> origin/develop
             elements.promoCheckbox.checked = false;
             handlePromotionFields(false);
             return;
