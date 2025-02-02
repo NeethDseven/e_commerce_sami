@@ -37,8 +37,11 @@
     </div>
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     <!-- Toast pour les notifications -->
 <<<<<<< HEAD
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
