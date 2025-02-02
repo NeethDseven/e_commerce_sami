@@ -23,22 +23,12 @@ switch ($action) {
         }
         exit;
 
-
     case 'create':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Content-Type: application/json');
             try {
-<<<<<<< HEAD
                 $pdo->beginTransaction();
 
-                // Création de l'article
-=======
-                // Vérifier qu'il n'y a pas d'ID article pour la création
-                if (!empty($_POST['id_article'])) {
-                    throw new Exception('ID article non autorisé pour la création');
-                }
-
->>>>>>> origin/develop
                 $data = [
                     'nom' => $_POST['nom'] ?? '',
                     'description' => $_POST['description'] ?? '',
@@ -47,14 +37,12 @@ switch ($action) {
                     'categorie' => intval($_POST['categorie'] ?? 0)
                 ];
 
-                // Validation des données de base
                 if (empty($data['nom'])) throw new Exception('Le nom est requis');
                 if (empty($data['description'])) throw new Exception('La description est requise');
                 if ($data['prix'] <= 0) throw new Exception('Le prix doit être supérieur à 0');
                 if ($data['stock'] < 0) throw new Exception('Le stock ne peut pas être négatif');
                 if ($data['categorie'] <= 0) throw new Exception('La catégorie est requise');
 
-                // Gestion de l'image
                 if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
                     $uploadDir = 'assets/images/articles/';
                     if (!file_exists($uploadDir)) {
@@ -69,11 +57,9 @@ switch ($action) {
                     }
                 }
 
-<<<<<<< HEAD
                 $success = createArticle($pdo, $data);
                 $articleId = $pdo->lastInsertId();
 
-                // Gestion de la promotion
                 if ($success && isset($_POST['has_promotion']) && $_POST['has_promotion'] === 'on') {
                     $reduction = min(60, max(0, floatval($_POST['reduction_percent'])));
                     addPromotion($pdo, $articleId, $reduction, $_POST['date_debut'], $_POST['date_fin']);
@@ -81,7 +67,6 @@ switch ($action) {
 
                 $pdo->commit();
 
-                // Récupérer l'article complet avec ses informations de promotion
                 $articleComplet = getArticleById($pdo, $articleId);
 
                 echo json_encode([
@@ -91,28 +76,6 @@ switch ($action) {
                 ]);
             } catch (Exception $e) {
                 $pdo->rollBack();
-=======
-                $success = false;
-                $pdo->beginTransaction();
-
-                try {
-                    $success = createArticle($pdo, $data);
-                    $articleId = $pdo->lastInsertId();
-
-                    // Gestion de la promotion
-                    if ($success && isset($_POST['promotion_active']) && $_POST['promotion_active'] === 'true') {
-                        $reduction = min(60, max(0, floatval($_POST['reduction_percent'])));
-                        addPromotion($pdo, $articleId, $reduction, $_POST['date_debut'], $_POST['date_fin']);
-                    }
-
-                    $pdo->commit();
-                    echo json_encode(['success' => true, 'message' => 'Opération réussie']);
-                } catch (Exception $e) {
-                    $pdo->rollBack();
-                    throw $e;
-                }
-            } catch (Exception $e) {
->>>>>>> origin/develop
                 http_response_code(400);
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
             }
@@ -122,33 +85,22 @@ switch ($action) {
 
     case 'update':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-<<<<<<< HEAD
             ob_clean();
             header('Content-Type: application/json');
             error_reporting(E_ALL);
             ini_set('display_errors', 0);
 
             try {
-=======
-            header('Content-Type: application/json');
-            try {
-                // Vérifier qu'il y a bien un ID article pour la mise à jour
->>>>>>> origin/develop
                 if (empty($_POST['id_article'])) {
                     throw new Exception('ID article requis pour la mise à jour');
                 }
 
-<<<<<<< HEAD
-                // Log received data
                 error_log('UPDATE - Received POST data: ' . print_r($_POST, true));
                 error_log('UPDATE - Received FILES data: ' . print_r($_FILES, true));
 
                 $pdo->beginTransaction();
-
-                // Article update
                 $articleResult = updateArticle($pdo, $_POST);
                 
-                // Promotion handling
                 $hasPromotion = isset($_POST['has_promotion']) && $_POST['has_promotion'] === 'on';
                 if ($hasPromotion) {
                     if (!empty($_POST['reduction_percent']) && !empty($_POST['date_debut']) && !empty($_POST['date_fin'])) {
@@ -162,7 +114,6 @@ switch ($action) {
                     removePromotion($pdo, $_POST['id_article']);
                 }
 
-                // Get final updated article state
                 $updatedArticle = getArticleById($pdo, $_POST['id_article']);
 
                 $pdo->commit();
@@ -182,7 +133,6 @@ switch ($action) {
                     'success' => false,
                     'error' => $e->getMessage()
                 ]);
-=======
                 $pdo->beginTransaction();
 
                 // Debug log pour voir les valeurs reçues
@@ -232,7 +182,6 @@ switch ($action) {
                 error_log("Erreur dans update: " . $e->getMessage());
                 http_response_code(400);
                 echo json_encode(['success' => false, 'error' => $e->getMessage()]);
->>>>>>> origin/develop
             }
             exit;
         }
@@ -270,12 +219,7 @@ switch ($action) {
                 'offset' => ($page - 1) * $itemsPerPage,
                 'category' => $_GET['category'] ?? null,
                 'search' => $_GET['search'] ?? '',
-<<<<<<< HEAD
                 'promos_only' => isset($_GET['promos_only']) && $_GET['promos_only'] === '1'
-=======
-                'withPromotions' => true,
-                'promos_only' => isset($_GET['promos_only']) && $_GET['promos_only'] === '1'  // Ajouter cette ligne
->>>>>>> origin/develop
             ];
 
             error_log('Options de recherche: ' . print_r($options, true));
@@ -295,7 +239,6 @@ switch ($action) {
                 exit;
             }
 
-            // Pour le rendu normal de la page
             $categories = getCategories($pdo);
             require_once __DIR__ . '/../views/adminPanelView.php';
 
