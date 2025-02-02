@@ -1,0 +1,67 @@
+[utilisateur]  
+├── id_utilisateur (PK)  
+├── nom  
+├── prenom  
+├── email (Index)  
+├── mot_de_passe  
+├── adresse  
+├── carte  
+└── role (enum: 'utilisateur', 'admin')  
+       │  
+       │ (1,N)  
+       ▼  
+[commande]  
+├── id_commande (PK)  
+├── id_utilisateur (FK → UTILISATEUR)  
+├── date_commande  
+├── statut  
+├── est_invite  
+├── nom_livraison  
+├── prenom_livraison  
+├── email_livraison  
+└── adresse_livraison  
+       │  
+       │ (1,N)  
+       ▼  
+[detail_commande]  
+├── id_detail (PK)  
+├── id_commande (FK → COMMANDE)  
+├── id_article (FK → ARTICLE)  
+├── quantite  
+└── prix_unitaire  
+       │  
+       │ (N,1)  
+       ▼  
+[article]  
+├── id_article (PK)  
+├── nom  
+├── description  
+├── image  
+├── prix  
+├── stock  
+├── id_categorie (FK → CATEGORIE)                                      
+       │                                                        
+       │ (1,N)  
+       ▼  
+[categorie]  
+├── id_categorie (PK)  
+├── nom  
+└── ordre  
+
+[article]  
+       │  
+       │ (1,N)  
+       ▼  
+[promotion]  
+├── id_promotion (PK)  
+├── id_article (FK → ARTICLE)  
+├── prix_promotionnel  
+├── date_debut  
+├── date_fin  
+└── reduction_percent  
+
+🔹 (1,N) Utilisateur → Commande → Un utilisateur peut passer plusieurs commandes, mais une commande appartient à un seul utilisateur.
+🔹 (1,N) Commande → Détail Commande → Une commande contient plusieurs articles.
+🔹 (1,N) Article → Détail Commande → Un article peut être présent dans plusieurs commandes.
+🔹 (1,N) Catégorie → Article → Une catégorie contient plusieurs articles.
+🔹 (1,N) Article → Promotion → Un article peut avoir plusieurs promotions à différentes périodes.

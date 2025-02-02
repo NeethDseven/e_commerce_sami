@@ -1,0 +1,111 @@
+/* Styles pour la gestion des catégories */
+.sortable-ghost {
+    background-color: #f8f9fa;
+    opacity: 0.5;
+}
+
+.sorting-mode tr {
+    cursor: move !important;
+    background-color: #fff8dc;
+}
+
+.sorting-mode tr:hover {
+    background-color: #ffeb3b;
+}
+
+.sortable-chosen {
+    background-color: #e9ecef;
+}
+
+.sortable-drag {
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.15);
+}
+
+.handle {
+    padding: 8px;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: default;
+}
+
+.sorting-mode .handle {
+    cursor: move;
+    color: #ffc107;
+}
+
+.sorting-mode .handle i {
+    transform: scale(1.2);
+    transition: transform 0.2s;
+}
+
+.handle i.drag-icon {
+    display: none;
+}
+
+.sorting-mode .handle i.drag-icon {
+    display: inline-block;
+}
+
+#categoriesTable tr {
+    cursor: move;
+}
+
+/* Styles pour le toast */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1051;
+}
+
+.toast {
+    min-width: 200px;
+}
+
+.toast.bg-success {
+    color: white;
+}
+
+.toast.bg-danger {
+    color: white;
+}
+
+
+
+.carousel-item {
+    transition: transform 1.2s ease-in-out;
+}
+
+.carousel-fade .carousel-item {
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.carousel-fade .carousel-item.active {
+    opacity: 1;
+}
+
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+    transition: transform 0.3s ease-in-out;
+}
+
+.carousel-control-prev:hover .carousel-control-prev-icon {
+    transform: translateX(-5px);
+}
+
+.carousel-control-next:hover .carousel-control-next-icon {
+    transform: translateX(5px);
+}
+
+.carousel-indicators [data-bs-target] {
+    transition: width 0.3s ease-in-out;
+}
+
+.carousel-indicators .active {
+    width: 30px;
+}
+

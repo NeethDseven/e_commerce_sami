@@ -1,0 +1,73 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /projet/e_commerce_sami-develop/
+
+    # Redirection stricte pour developindex.php en POST
+    RewriteCond %{REQUEST_METHOD} POST
+    RewriteCond %{REQUEST_URI} ^/projet/e_commerce_sami-developindex\.php
+    RewriteRule ^(.*)developindex\.php(.*)$ /projet/e_commerce_sami-develop/index.php$2 [R=307,L]
+    
+    # Règle spécifique pour corriger developindex.php
+    RewriteCond %{REQUEST_URI} ^/projet/e_commerce_sami-developindex\.php
+    RewriteRule ^(.*)developindex\.php(.*)$ /projet/e_commerce_sami-develop/index.php$2 [R=301,L]
+    
+    # Corriger l'URL malformée (developindex.php -> develop/index.php)
+    RewriteCond %{THE_REQUEST} /projet/e_commerce_sami-develop([^/]*?)index\.php [NC]
+    RewriteRule ^ /projet/e_commerce_sami-develop/$1/index.php [R=301,L]
+    
+    # Normalize multiple slashes to single slash
+    RewriteCond %{THE_REQUEST} //+
+    RewriteRule ^.*$ $0 [NE,R=308,L]
+    
+    # Remove trailing slashes
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)/$ /$1 [R=308,L]
+    
+    # Fix double slashes in URLs
+    RewriteCond %{THE_REQUEST} //
+    RewriteRule .* /$0 [R=308,L]
+    
+    # Handle OPTIONS requests
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+    
+    # Allow direct access to assets
+    RewriteCond %{REQUEST_URI} !^/projet/e_commerce_sami-develop/assets/
+    
+    # Route all other requests through index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+
+    # Handle API requests
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^index\.php$ - [L]
+    
+    # Add headers for CORS and JSON
+    <FilesMatch "^index\.php$">
+        Header set Access-Control-Allow-Origin "*"
+        Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+        Header set Access-Control-Allow-Headers "Content-Type, X-Requested-With"
+        Header set Access-Control-Allow-Credentials "true"
+    </FilesMatch>
+</IfModule>
+
+# Set proper MIME types
+<IfModule mod_mime.c>
+    AddType application/javascript .js
+    AddType application/json .json
+</IfModule>
+
+# CORS and security headers
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "http://127.0.0.1"
+    Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, X-Requested-With"
+    Header set Access-Control-Allow-Credentials "true"
+</IfModule>
+
+# Enable CORS for all requests
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type, X-Requested-With"
