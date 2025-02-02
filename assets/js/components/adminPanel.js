@@ -7,6 +7,10 @@ import {
     updatePagination,
 } from '../services/adminPanelService.js';
 
+<<<<<<< HEAD
+=======
+// Variables globales
+>>>>>>> origin/develop
 const state = {
     searchTerm: '',
     category: '',
@@ -14,6 +18,10 @@ const state = {
     showOnlyPromos: false
 };
 
+<<<<<<< HEAD
+=======
+// Utilitaires
+>>>>>>> origin/develop
 const showToast = (message, type = 'success') => {
     const toastEl = document.createElement('div');
     toastEl.className = `toast align-items-center text-white bg-${type} border-0`;
@@ -34,11 +42,19 @@ const handlePromotionFields = (show) => {
     const promotionFields = document.getElementById('promotion_fields');
     promotionFields.style.display = show ? 'block' : 'none';
     
+<<<<<<< HEAD
+=======
+    // Modifier la gestion des champs required
+>>>>>>> origin/develop
     promotionFields.querySelectorAll('input').forEach(field => {
         if (show) {
             field.setAttribute('required', 'required');
         } else {
             field.removeAttribute('required');
+<<<<<<< HEAD
+=======
+            // Ne pas vider les valeurs ici
+>>>>>>> origin/develop
         }
     });
 };
@@ -53,6 +69,10 @@ const calculatePromotionalPrice = (prix, reduction) => {
     }
 };
 
+<<<<<<< HEAD
+=======
+// Gestionnaire principal
+>>>>>>> origin/develop
 document.addEventListener('DOMContentLoaded', async () => {
     const elements = {
         form: document.getElementById('articleForm'),
@@ -68,8 +88,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     };
 
+<<<<<<< HEAD
     elements.promoCheckbox?.addEventListener('change', (e) => {
         handlePromotionFields(e.target.checked);
+=======
+    // Gestionnaires d'événements
+    elements.promoCheckbox?.addEventListener('change', (e) => {
+        handlePromotionFields(e.target.checked);
+        // Réinitialiser le message de prix calculé si on désactive les promotions
+>>>>>>> origin/develop
         if (!e.target.checked) {
             const prixCalculeDiv = document.getElementById('prix_calcule');
             if (prixCalculeDiv) {
@@ -89,12 +116,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         if (!isNaN(reduction)) {
+<<<<<<< HEAD
             reduction = Math.min(60, Math.max(0, reduction));
             e.target.value = reduction.toString();
+=======
+            // Garder la précision décimale
+            reduction = Math.min(60, Math.max(0, reduction));
+            e.target.value = reduction.toString(); // Garder la valeur exacte
+>>>>>>> origin/develop
             calculatePromotionalPrice(prix, reduction);
         }
     });
 
+<<<<<<< HEAD
     elements.modal.addEventListener('show.bs.modal', event => {
         const button = event.relatedTarget;
         elements.form.reset();
@@ -102,11 +136,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('id_article').value = '';
         
         if (!button?.dataset.bsArticle) {
+=======
+    // Modal handler
+    elements.modal.addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
+        elements.form.reset(); // Reset le formulaire d'abord
+        
+        // Réinitialiser explicitement l'ID
+        document.getElementById('id_article').value = '';
+        
+        if (!button?.dataset.bsArticle) {
+            // Mode création
+>>>>>>> origin/develop
             elements.promoCheckbox.checked = false;
             handlePromotionFields(false);
             return;
         }
         
+<<<<<<< HEAD
+=======
+        // Mode édition
+>>>>>>> origin/develop
         const article = JSON.parse(button.dataset.bsArticle);
         if (article) {
             Object.entries({
@@ -120,6 +170,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById(id).value = value;
             });
 
+<<<<<<< HEAD
+=======
+            // Gestion promotion
+>>>>>>> origin/develop
             const hasPromotion = article.prix_promotionnel !== null;
             elements.promoCheckbox.checked = hasPromotion;
             handlePromotionFields(hasPromotion);
@@ -134,6 +188,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+<<<<<<< HEAD
+=======
+    // Ajouter un gestionnaire pour le modal qui se ferme
+>>>>>>> origin/develop
     elements.modal.addEventListener('hidden.bs.modal', () => {
         elements.form.reset();
         document.getElementById('id_article').value = '';
@@ -141,6 +199,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         handlePromotionFields(false);
     });
 
+<<<<<<< HEAD
+=======
+    // Search handler
+>>>>>>> origin/develop
     const handleSearch = async (page = 1) => {
         if (state.isLoading) return;
         state.isLoading = true;
@@ -153,6 +215,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             
             if (data.success && data.data) {
+<<<<<<< HEAD
+=======
+                // Mise à jour du contenu et de la pagination
+>>>>>>> origin/develop
                 updateTableContent(data.data.articles);
                 if (data.data.pagination) {
                     updatePagination(data.data.pagination);
@@ -167,6 +233,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+<<<<<<< HEAD
+=======
+    // Event listeners
+>>>>>>> origin/develop
     elements.search.addEventListener('input', debounce(() => {
         state.searchTerm = elements.search.value.trim();
         handleSearch(1);
@@ -191,6 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const formData = new FormData(elements.form);
             const hasPromotion = elements.promoCheckbox.checked;
+<<<<<<< HEAD
             formData.set('has_promotion', hasPromotion ? 'on' : 'off');
             
             const result = await saveArticle(formData);
@@ -216,6 +287,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 throw new Error(result.error || 'Erreur lors de la sauvegarde');
             }
+=======
+            
+            // Ajouter explicitement has_promotion
+            formData.set('has_promotion', hasPromotion ? 'on' : 'off');
+            
+            if (!hasPromotion) {
+                // Si pas de promotion, supprimer les champs liés
+                formData.delete('reduction_percent');
+                formData.delete('date_debut');
+                formData.delete('date_fin');
+            } else {
+                // Vérifier les champs requis pour la promotion
+                const reduction = formData.get('reduction_percent');
+                const dateDebut = formData.get('date_debut');
+                const dateFin = formData.get('date_fin');
+                
+                if (!reduction || !dateDebut || !dateFin) {
+                    showToast('Tous les champs de promotion sont requis', 'warning');
+                    if (submitButton) submitButton.disabled = false;
+                    return;
+                }
+            }
+
+            const result = await saveArticle(formData);
+            bootstrap.Modal.getInstance(elements.modal)?.hide();
+            await handleSearch(1);
+            showToast(result.message || 'Article sauvegardé avec succès', 'success');
+>>>>>>> origin/develop
         } catch (error) {
             showToast(error.message, 'danger');
         } finally {
@@ -224,6 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+<<<<<<< HEAD
     async function updatePromotionsSection() {
         try {
             const response = await fetch('index.php?controller=article&action=promotions', {
@@ -319,6 +419,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
     }
 
+=======
+    // Ajouter l'écouteur d'événements pour la pagination
+>>>>>>> origin/develop
     elements.pagination?.addEventListener('click', async (e) => {
         e.preventDefault();
         const pageLink = e.target.closest('.page-link');
@@ -334,6 +437,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+<<<<<<< HEAD
+=======
+    // Remplacer l'écouteur d'événements pour la suppression d'articles
+>>>>>>> origin/develop
     document.addEventListener('click', async (e) => {
         const deleteButton = e.target.closest('.delete-article');
         if (!deleteButton) return;
@@ -361,6 +468,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
+<<<<<<< HEAD
+=======
+    // Initial load
+>>>>>>> origin/develop
     try {
         const data = await fetchArticles(1);
         if (data.data?.articles) {

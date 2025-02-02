@@ -51,11 +51,14 @@ export async function saveArticle(formData) {
         const articleId = formData.get('id_article');
         const action = articleId ? 'update' : 'create';
         
+<<<<<<< HEAD
         // Debug des données envoyées
         for (let pair of formData.entries()) {
             console.log(pair[0] + ': ' + pair[1]);
         }
 
+=======
+>>>>>>> origin/develop
         const response = await fetch(`index.php?controller=adminPanel&action=${action}`, {
             method: 'POST',
             body: formData,
@@ -65,6 +68,10 @@ export async function saveArticle(formData) {
             }
         });
 
+<<<<<<< HEAD
+=======
+        // Vérifier le type de contenu
+>>>>>>> origin/develop
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
@@ -74,7 +81,10 @@ export async function saveArticle(formData) {
 
         const result = await response.json();
         if (!result.success) {
+<<<<<<< HEAD
             console.error('Erreur serveur:', result);
+=======
+>>>>>>> origin/develop
             throw new Error(result.error || 'Erreur lors de l\'opération');
         }
         return result;
@@ -176,12 +186,20 @@ export function updatePagination(paginationData) {
     const totalPages = parseInt(paginationData.totalPages);
     const currentPage = parseInt(paginationData.currentPage);
 
+<<<<<<< HEAD
+=======
+    // Bouton précédent
+>>>>>>> origin/develop
     if (currentPage > 1) {
         html += `<li class="page-item">
             <a class="page-link" href="#" data-page="${currentPage - 1}">Précédent</a>
         </li>`;
     }
 
+<<<<<<< HEAD
+=======
+    // Pages numérotées
+>>>>>>> origin/develop
     for (let i = 1; i <= totalPages; i++) {
         if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
             html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
@@ -192,6 +210,10 @@ export function updatePagination(paginationData) {
         }
     }
 
+<<<<<<< HEAD
+=======
+    // Bouton suivant
+>>>>>>> origin/develop
     if (currentPage < totalPages) {
         html += `<li class="page-item">
             <a class="page-link" href="#" data-page="${currentPage + 1}">Suivant</a>

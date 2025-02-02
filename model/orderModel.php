@@ -11,6 +11,7 @@ function getOrderById($orderId) {
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 
+<<<<<<< HEAD
 function getOrderDetails($pdo, $orderId) {
     try {
         $stmt = $pdo->prepare("
@@ -67,6 +68,18 @@ function getOrderDetails($pdo, $orderId) {
         error_log("Erreur SQL dans getOrderDetails: " . $e->getMessage());
         throw new Exception("Erreur lors de la récupération des détails de la commande");
     }
+=======
+function getOrderDetails($orderId) {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT article.prix as prix, article.nom, detail_commande.quantite
+        FROM detail_commande
+        JOIN article ON detail_commande.id_article = article.id_article
+        WHERE detail_commande.id_commande = ?
+    ");
+    $stmt->execute([$orderId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+>>>>>>> origin/develop
 }
 
 function calculateOrderTotal($orderId) {
@@ -84,6 +97,7 @@ function calculateOrderTotal($orderId) {
 function updateOrderStatus($orderId, $newStatus) {
     global $pdo;
     try {
+<<<<<<< HEAD
         $orderId = intval($orderId);
         if (!$orderId || !isValidStatus($newStatus)) {
             error_log("Invalid status update parameters - orderId: $orderId, status: $newStatus");
@@ -121,6 +135,15 @@ function updateOrderStatus($orderId, $newStatus) {
         return true;
     } catch (PDOException $e) {
         error_log("Database error during status update: " . $e->getMessage());
+=======
+        if (!isValidStatus($newStatus)) {
+            return false;
+        }
+        $stmt = $pdo->prepare("UPDATE commande SET statut = ? WHERE id_commande = ?");
+        return $stmt->execute([$newStatus, $orderId]);
+    } catch (PDOException $e) {
+        error_log("Erreur lors de la mise à jour du statut: " . $e->getMessage());
+>>>>>>> origin/develop
         return false;
     }
 }
@@ -163,6 +186,7 @@ function getOrdersByStatus($status = null) {
 
 // Fonction pour valider le statut
 function isValidStatus($status) {
+<<<<<<< HEAD
     $validStatuses = [
         'en cours',
         'validée',
@@ -207,6 +231,29 @@ function getAllOrders($pdo, $page = 1, $perPage = 15) {
         'pages' => ceil($totalRows / $perPage),
         'currentPage' => $page
     ];
+=======
+    return in_array($status, ['en cours', 'validée', 'annulée']);
+}
+
+function getAllOrders($pdo) {
+    try {
+        $stmt = $pdo->prepare("
+            SELECT 
+                c.id_commande,
+                c.date_commande,
+                c.statut,
+                u.nom as nom_utilisateur
+            FROM commande c
+            LEFT JOIN utilisateur u ON c.id_utilisateur = u.id_utilisateur
+            ORDER BY c.date_commande DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Erreur lors de la récupération des commandes : " . $e->getMessage());
+        return [];
+    }
+>>>>>>> origin/develop
 }
 
 function saveOrderDetails($pdo, $orderId, $paymentInfo) {
@@ -239,6 +286,7 @@ function saveOrderDetails($pdo, $orderId, $paymentInfo) {
     }
 }
 
+<<<<<<< HEAD
 function getOrdersByUser($pdo, $userId = null, $email = null) {
     try {
         $params = [];
@@ -252,12 +300,17 @@ function getOrdersByUser($pdo, $userId = null, $email = null) {
             $params['email'] = $email;
         }
 
+=======
+function getOrdersByUser($pdo, $userId) {
+    try {
+>>>>>>> origin/develop
         $stmt = $pdo->prepare("
             SELECT 
                 c.id_commande,
                 c.date_commande,
                 c.statut,
                 c.total,
+<<<<<<< HEAD
                 COUNT(dc.id_article) as nombre_articles,
                 c.nom_livraison,
                 c.email_livraison,
@@ -265,11 +318,21 @@ function getOrdersByUser($pdo, $userId = null, $email = null) {
             FROM commande c
             LEFT JOIN detail_commande dc ON c.id_commande = dc.id_commande
             $where
+=======
+                COUNT(dc.id_article) as nombre_articles
+            FROM commande c
+            LEFT JOIN ligne_commande dc ON c.id_commande = dc.id_commande
+            WHERE c.id_utilisateur = :user_id
+>>>>>>> origin/develop
             GROUP BY c.id_commande
             ORDER BY c.date_commande DESC
         ");
         
+<<<<<<< HEAD
         $stmt->execute($params);
+=======
+        $stmt->execute(['user_id' => $userId]);
+>>>>>>> origin/develop
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         error_log("Erreur dans getOrdersByUser: " . $e->getMessage());
@@ -277,6 +340,7 @@ function getOrdersByUser($pdo, $userId = null, $email = null) {
     }
 }
 
+<<<<<<< HEAD
 function createOrder($pdo, $userId, $cartItems, $paymentInfo, $guestId = null) {
     try {
         $pdo->beginTransaction();
@@ -322,6 +386,20 @@ function createOrder($pdo, $userId, $cartItems, $paymentInfo, $guestId = null) {
             (id_commande, id_article, quantite, prix_unitaire) 
             VALUES (:orderId, :articleId, :quantity, :price)");
 
+=======
+function createOrder($pdo, $userId, $cartItems, $paymentInfo) {
+    try {
+        $pdo->beginTransaction();
+
+        // Créer la commande
+        $stmt = $pdo->prepare("INSERT INTO commandes (id_utilisateur, date_commande, statut) VALUES (:userId, NOW(), 'en_attente')");
+        $stmt->execute(['userId' => $userId]);
+        $orderId = $pdo->lastInsertId();
+
+        // Insérer les détails de la commande
+        $stmt = $pdo->prepare("INSERT INTO details_commande (id_commande, id_article, quantite, prix_unitaire) VALUES (:orderId, :articleId, :quantity, :price)");
+        
+>>>>>>> origin/develop
         foreach ($cartItems as $item) {
             $stmt->execute([
                 'orderId' => $orderId,
@@ -329,6 +407,7 @@ function createOrder($pdo, $userId, $cartItems, $paymentInfo, $guestId = null) {
                 'quantity' => $item['quantite'],
                 'price' => $item['prix']
             ]);
+<<<<<<< HEAD
 
             // Mettre à jour le stock
             $updateStock = $pdo->prepare("UPDATE article 
@@ -395,3 +474,17 @@ function validateGuestData($data) {
 
     return count($errors) === 0 ? true : $errors;
 }
+=======
+        }
+
+        // Vider le panier après la commande
+        clearCart($pdo, $userId);
+
+        $pdo->commit();
+        return $orderId;
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        throw new Exception("Erreur lors de la création de la commande : " . $e->getMessage());
+    }
+}
+>>>>>>> origin/develop

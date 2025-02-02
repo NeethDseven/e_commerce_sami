@@ -10,8 +10,16 @@ function getCategories(PDO $pdo): array {
         ");
         
         $stmt->execute();
+<<<<<<< HEAD
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
+=======
+        $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log('Catégories récupérées: ' . print_r($categories, true));
+        return $categories;
+    } catch (PDOException $e) {
+        error_log('Erreur getCategories: ' . $e->getMessage());
+>>>>>>> origin/develop
         throw new Exception('Erreur lors de la récupération des catégories');
     }
 }
@@ -47,6 +55,7 @@ function updateCategory(PDO $pdo, array $data): bool {
 
 function deleteCategory(PDO $pdo, int $id): bool {
     try {
+<<<<<<< HEAD
         $pdo->beginTransaction();
 
         // Supprimer d'abord les articles associés
@@ -65,6 +74,13 @@ function deleteCategory(PDO $pdo, int $id): bool {
         }
         error_log('Erreur deleteCategory: ' . $e->getMessage());
         throw new Exception('Erreur lors de la suppression de la catégorie et de ses articles');
+=======
+        $stmt = $pdo->prepare('DELETE FROM categorie WHERE id_categorie = :id');
+        return $stmt->execute([':id' => $id]);
+    } catch (PDOException $e) {
+        error_log('Erreur deleteCategory: ' . $e->getMessage());
+        throw new Exception('Erreur lors de la suppression de la catégorie');
+>>>>>>> origin/develop
     }
 }
 

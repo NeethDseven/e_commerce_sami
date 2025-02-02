@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 require_once __DIR__ . '/../model/orderModel.php';
 
 function getStatusColor($status) {
@@ -19,6 +20,10 @@ function getStatusColor($status) {
 }
 
 if (!isset($_GET['order_id']) || !isset($orderData) || !$orderData) {
+=======
+// Vérification au début du fichier
+if (!isset($orderData) || !$orderData) {
+>>>>>>> origin/develop
     echo '<div class="container mt-4">';
     echo '<div class="alert alert-warning">Commande non trouvée</div>';
     echo '<a href="index.php?page=orderlist" class="btn btn-secondary">Retour à la liste</a>';
@@ -60,7 +65,11 @@ if (!isset($_GET['order_id']) || !isset($orderData) || !$orderData) {
         </div>
 
         <div class="card mb-4">
+<<<<<<< HEAD
             <div class="card-header">
+=======
+            <div class="card-header"></div>
+>>>>>>> origin/develop
                 <div class="d-flex justify-content-between align-items-center">
                     <h3 class="mb-0">Statut de la commande</h3>
                     <span class="badge bg-<?= getStatusColor($orderData['order']['statut']) ?>">
@@ -80,9 +89,15 @@ if (!isset($_GET['order_id']) || !isset($orderData) || !$orderData) {
                         <h3>Informations de livraison</h3>
                     </div>
                     <div class="card-body">
+<<<<<<< HEAD
                         <p><strong>Nom:</strong> <?= htmlspecialchars($orderData['shipping_info']['nom'] ?? 'Non renseigné') ?></p>
                         <p><strong>Prénom:</strong> <?= htmlspecialchars($orderData['shipping_info']['prenom'] ?? 'Non renseigné') ?></p>
                         <p><strong>Adresse:</strong><br><?= nl2br(htmlspecialchars($orderData['shipping_info']['adresse'] ?? 'Non renseignée')) ?></p>
+=======
+                        <p><strong>Nom:</strong> <?= htmlspecialchars($orderData['shipping_info']['nom']) ?></p>
+                        <p><strong>Prénom:</strong> <?= htmlspecialchars($orderData['shipping_info']['prenom']) ?></p>
+                        <p><strong>Adresse:</strong><br><?= nl2br(htmlspecialchars($orderData['shipping_info']['adresse'])) ?></p>
+>>>>>>> origin/develop
                     </div>
                 </div>
             </div>
@@ -92,8 +107,13 @@ if (!isset($_GET['order_id']) || !isset($orderData) || !$orderData) {
                         <h3>Informations de paiement</h3>
                     </div>
                     <div class="card-body">
+<<<<<<< HEAD
                         <p><strong>Carte:</strong> <?= htmlspecialchars($orderData['payment_info']['carte'] ?? 'Non renseigné') ?></p>
                         <p><strong>Date d'expiration:</strong> <?= htmlspecialchars($orderData['payment_info']['expiration'] ?? 'Non renseigné') ?></p>
+=======
+                        <p><strong>Carte:</strong> <?= htmlspecialchars($orderData['payment_info']['carte']) ?></p>
+                        <p><strong>Date d'expiration:</strong> <?= htmlspecialchars($orderData['payment_info']['expiration']) ?></p>
+>>>>>>> origin/develop
                     </div>
                 </div>
             </div>
@@ -137,6 +157,10 @@ if (!isset($_GET['order_id']) || !isset($orderData) || !$orderData) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<<<<<<< HEAD
     <script type="module" src="./assets/js/components/orderDetailsComponent.js"></script>
+=======
+    <script type="module" src="/projet/ecommercesami/assets/js/components/cartComponent.js"></script>
+>>>>>>> origin/develop
 </body>
 </html>

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const BASE_URL = (() => {
     const metaUrl = document.querySelector('meta[name="base-url"]')?.content;
     const defaultUrl = '/projet/e_commerce_sami-develop/';
@@ -5,12 +6,16 @@ const BASE_URL = (() => {
     return url.endsWith('/') ? url : url + '/';
 })();
 
+=======
+const BASE_URL = '/projet/ecommercesami/';  // Correction du chemin de base
+>>>>>>> origin/develop
 const defaultHeaders = {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest',
     'Accept': 'application/json'
 };
 
+<<<<<<< HEAD
 async function makeRequest(url, options = {}) {
     const response = await fetch(url, {
         ...options,
@@ -54,17 +59,40 @@ export async function removeFromCart(idArticle) {
     } catch (error) {
         console.error('Error removing from cart:', error);
         throw error;
+=======
+
+export async function removeFromCart(idArticle) {
+    const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=remove`, {  // Modifié de 'cart' à 'cartOrder'
+        method: 'POST',
+        headers: defaultHeaders,
+        body: JSON.stringify({ id_article: idArticle })
+    });
+    
+    const data = await response.text();
+    try {
+        return JSON.parse(data);
+    } catch (e) {
+        throw new Error(`Erreur serveur: ${data}`);
+>>>>>>> origin/develop
     }
 }
 
 export async function updateCartQuantity(idArticle, newQuantity) {
     try {
+<<<<<<< HEAD
+=======
+        // Vérification et conversion des valeurs
+>>>>>>> origin/develop
         if (!idArticle || !newQuantity) {
             throw new Error('ID article et quantité requis');
         }
 
+<<<<<<< HEAD
         const url = `${BASE_URL}index.php?controller=cartOrder&action=update`;
         const response = await fetch(url, {
+=======
+        const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=update`, {
+>>>>>>> origin/develop
             method: 'POST',
             headers: defaultHeaders,
             body: JSON.stringify({
@@ -76,16 +104,29 @@ export async function updateCartQuantity(idArticle, newQuantity) {
         const data = await response.json().catch(() => null);
         
         if (!response.ok) {
+<<<<<<< HEAD
+=======
+            console.log('Réponse serveur:', data); // Pour déboguer
+>>>>>>> origin/develop
             throw new Error(data?.message || 'Erreur de mise à jour du panier');
         }
         
         return data;
     } catch (error) {
+<<<<<<< HEAD
+=======
+        console.error('Détails de l\'erreur updateCartQuantity:', {
+            idArticle,
+            newQuantity,
+            error: error.message
+        });
+>>>>>>> origin/develop
         throw error;
     }
 }
 
 export async function clearCart() {
+<<<<<<< HEAD
     try {
         const url = `${BASE_URL}index.php?controller=cartOrder&action=clear`;
         const response = await fetch(url, {
@@ -109,6 +150,20 @@ export async function clearCart() {
     }
 }
 
+=======
+    const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=clear`, {
+        method: 'POST',
+        headers: defaultHeaders
+    });
+    
+    if (!response.ok) {
+        throw new Error('Erreur lors du vidage du panier');
+    }
+    return response.json();
+}
+
+// Fonctions de calcul et de génération HTML
+>>>>>>> origin/develop
 export async function calculatePromotion(item) {
     const prixOriginal = parseFloat(item.prix);
     const prixFinal = parseFloat(item.prix_final);
@@ -138,6 +193,10 @@ export async function calculatePromotion(item) {
 
 export function generateCartHTML(items) {
     return items.map(item => {
+<<<<<<< HEAD
+=======
+        // Correction des noms des propriétés pour correspondre à ceux du backend
+>>>>>>> origin/develop
         const quantity = parseInt(item.quantite) || 0;
         const stock = parseInt(item.stock) || 0;
         const prixInitial = parseFloat(item.prix) || 0;
@@ -146,6 +205,10 @@ export function generateCartHTML(items) {
         const image = item.image || 'default-image.jpg';
         const id = item.id_article || '';
 
+<<<<<<< HEAD
+=======
+        // Calcul du prix à afficher
+>>>>>>> origin/develop
         const priceToDisplay = prixFinal < prixInitial ? prixFinal : prixInitial;
 
         return `
@@ -188,7 +251,12 @@ export function generateCartHTML(items) {
 export function generateSummaryHTML(cartData) {
     let total = 0;
     const items = cartData.items || [];
+<<<<<<< HEAD
 
+=======
+    
+    // Calcul correct du total
+>>>>>>> origin/develop
     items.forEach(item => {
         const quantity = parseInt(item.quantite) || 0;
         const prixInitial = parseFloat(item.prix) || 0;
@@ -213,6 +281,7 @@ export function generateSummaryHTML(cartData) {
     `;
 }
 
+<<<<<<< HEAD
 export async function validateOrder(orderData) {
     try {
         const response = await makeRequest(`${BASE_URL}index.php?controller=cartOrder&action=validate`, {
@@ -228,6 +297,39 @@ export async function validateOrder(orderData) {
     } catch (error) {
         console.error('Validate order error:', error);
         throw new Error(error.message || 'Erreur lors de la validation de la commande');
+=======
+// Gestion des commandes
+export async function validateOrder(orderData) {
+    try {
+        console.log('Sending order data:', orderData); // Debug
+
+        const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=validate`, {
+            method: 'POST',
+            headers: {
+                ...defaultHeaders
+            },
+            credentials: 'include', // Important pour les sessions
+            body: JSON.stringify(orderData)
+        });
+
+        const data = await response.json();
+        console.log('Server response:', data); // Debug
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Stocker l'URL actuelle avant la redirection
+                const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `${BASE_URL}index.php?page=login&return=${returnUrl}`;
+                throw new Error('Session expirée, veuillez vous reconnecter');
+            }
+            throw new Error(data.error || 'Erreur lors de la validation de la commande');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Erreur validateOrder:', error);
+        throw error;
+>>>>>>> origin/develop
     }
 }
 
@@ -241,6 +343,10 @@ export async function getOrders(userId) {
     return response.json();
 }
 
+<<<<<<< HEAD
+=======
+// UI helpers pour le panier
+>>>>>>> origin/develop
 export function updateCartCounter(items) {
     const counter = document.querySelector('#cart-counter');
     if (counter) {
@@ -262,6 +368,7 @@ export function showToast(message, type = 'success') {
     bsToast.show();
 }
 
+<<<<<<< HEAD
 export async function addToCart(articleData) {
     try {
         if (!articleData || typeof articleData !== 'object') {
@@ -300,6 +407,33 @@ export async function addToCart(articleData) {
         return result;
     } catch (error) {
         console.error('Error in addToCart:', error);
+=======
+export async function addToCart({ articleId, quantite }) {
+    try {
+        const response = await fetch(`${BASE_URL}index.php?controller=cartOrder&action=add`, {
+            method: 'POST',
+            headers: defaultHeaders,
+            body: JSON.stringify({
+                id_article: articleId,
+                quantite: quantite
+            })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Erreur lors de l\'ajout au panier');
+        }
+
+        if (data.success) {
+            showToast('Article ajouté au panier', 'success');
+            updateCartCounter(data.items || []);
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Erreur addToCart:', error);
+>>>>>>> origin/develop
         throw error;
     }
 }

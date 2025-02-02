@@ -6,7 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorElement = document.querySelector('#errors');
 
     validLoginBtn.addEventListener('click', async (event) => {
+<<<<<<< HEAD
         event.preventDefault();
+=======
+        event.preventDefault(); // Prevent default form submission
+>>>>>>> origin/develop
 
         if (!loginForm.checkValidity()) {
             loginForm.reportValidity();

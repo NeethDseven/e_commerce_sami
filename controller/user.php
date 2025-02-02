@@ -1,7 +1,15 @@
 <?php
+<<<<<<< HEAD
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+=======
+// Désactiver l'affichage des erreurs dans la sortie
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
+// Configurer le gestionnaire d'erreurs personnalisé
+>>>>>>> origin/develop
 set_error_handler(function($errno, $errstr, $errfile, $errline) {
     error_log("Erreur PHP : $errstr dans $errfile ligne $errline");
     return true;
@@ -9,11 +17,27 @@ set_error_handler(function($errno, $errstr, $errfile, $errline) {
 
 session_start();
 
+<<<<<<< HEAD
+=======
+// Définir l'en-tête JSON avant tout
+header('Content-Type: application/json; charset=utf-8');
+
+// Ajout des headers de sécurité
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header("Content-Security-Policy: default-src 'self'");
+
+>>>>>>> origin/develop
 try {
     require __DIR__ . '/../model/user.php';
     require __DIR__ . '/../includes/database.php';
     require __DIR__ . '/../includes/functions.php';
 
+<<<<<<< HEAD
+=======
+    /** @var PDO $pdo */
+>>>>>>> origin/develop
     $action = $_GET['action'] ?? 'list';
     $errors = [];
 
@@ -45,20 +69,39 @@ try {
 
     if ($action === 'add') {
         try {
+<<<<<<< HEAD
+=======
+            // Vérification de la méthode HTTP
+>>>>>>> origin/develop
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 throw new Exception('Méthode non autorisée', 405);
             }
 
+<<<<<<< HEAD
+=======
+            // Vérification des droits admin
+>>>>>>> origin/develop
             if (!isset($_SESSION['auth']) || $_SESSION['auth'] !== true || !isset($_SESSION['Role']) || $_SESSION['Role'] !== 'admin') {
                 throw new Exception('Accès non autorisé', 403);
             }
 
+<<<<<<< HEAD
             error_log('POST data: ' . print_r($_POST, true));
 
+=======
+            // Débogage
+            error_log('POST data: ' . print_r($_POST, true));
+
+            // Validation des données requises
+>>>>>>> origin/develop
             if (empty($_POST['nom']) || empty($_POST['email']) || empty($_POST['mot_de_passe']) || empty($_POST['role'])) {
                 throw new Exception('Données manquantes');
             }
 
+<<<<<<< HEAD
+=======
+            // Nettoyage et validation des données
+>>>>>>> origin/develop
             $input = [
                 'nom' => filter_var($_POST['nom'] ?? '', FILTER_SANITIZE_STRING),
                 'email' => filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL),
@@ -66,6 +109,10 @@ try {
                 'role' => filter_var($_POST['role'] ?? '', FILTER_SANITIZE_STRING)
             ];
 
+<<<<<<< HEAD
+=======
+            // Validation stricte
+>>>>>>> origin/develop
             if (!preg_match('/^[A-Za-z0-9À-ÿ\s-]{2,50}$/', $input['nom'])) {
                 throw new Exception('Format de nom invalide');
             }
@@ -82,8 +129,15 @@ try {
                 throw new Exception('Rôle invalide');
             }
 
+<<<<<<< HEAD
             $input['mot_de_passe'] = password_hash($input['mot_de_passe'], PASSWORD_DEFAULT);
 
+=======
+            // Hachage du mot de passe
+            $input['mot_de_passe'] = password_hash($input['mot_de_passe'], PASSWORD_DEFAULT);
+
+            // Insertion de l'utilisateur
+>>>>>>> origin/develop
             $result = insertUser(
                 $pdo,
                 trim($input['nom']),
@@ -123,6 +177,10 @@ try {
         if (!empty($password)) {
             $password = password_hash($password, PASSWORD_DEFAULT);
         } else {
+<<<<<<< HEAD
+=======
+            // Si pas de nouveau mot de passe, on le retire pour ne pas écraser l'ancien
+>>>>>>> origin/develop
             unset($_POST['mot_de_passe']);
         }
 
@@ -165,6 +223,10 @@ try {
             try {
                 $pdo->beginTransaction();
                 
+<<<<<<< HEAD
+=======
+                // Vérifie si l'utilisateur a des commandes
+>>>>>>> origin/develop
                 $stmt = $pdo->prepare("SELECT COUNT(*) FROM commande WHERE id_utilisateur = ?");
                 $stmt->execute([$id]);
                 $hasCommandes = $stmt->fetchColumn() > 0;
@@ -179,11 +241,21 @@ try {
                     exit();
                 }
                 
+<<<<<<< HEAD
                 if ($force) {
+=======
+                // Si force=true ou pas de commandes, procéder à la suppression
+                if ($force) {
+                    // Supprimer d'abord les commandes
+>>>>>>> origin/develop
                     $stmt = $pdo->prepare("DELETE FROM commande WHERE id_utilisateur = ?");
                     $stmt->execute([$id]);
                 }
                 
+<<<<<<< HEAD
+=======
+                // Supprimer l'utilisateur
+>>>>>>> origin/develop
                 $stmt = $pdo->prepare("DELETE FROM utilisateur WHERE id_utilisateur = ?");
                 $stmt->execute([$id]);
                 

@@ -71,12 +71,20 @@ $categories = $categories ?? [];
                     </tr>
                 </thead>
                 <tbody id="articlesTable">
+<<<<<<< HEAD
+=======
+                    <!-- Le contenu sera généré par JavaScript -->
+>>>>>>> origin/develop
                 </tbody>
             </table>
         </div>
 
         <nav aria-label="Navigation des pages">
             <ul class="pagination justify-content-center" id="pagination">
+<<<<<<< HEAD
+=======
+                <!-- La pagination sera générée dynamiquement par JavaScript -->
+>>>>>>> origin/develop
             </ul>
         </nav>
     </div>
@@ -124,6 +132,10 @@ $categories = $categories ?? [];
                             </select>
                         </div>
                         
+<<<<<<< HEAD
+=======
+                        <!-- Remplacer la section des champs de promotion -->
+>>>>>>> origin/develop
                         <div class="mb-3">
                             <label class="form-label">Promotion</label>
                             <div class="form-check">

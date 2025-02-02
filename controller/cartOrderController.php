@@ -1,12 +1,22 @@
 <?php
+<<<<<<< HEAD
 header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
 
+=======
+>>>>>>> origin/develop
 require_once __DIR__ . '/../model/cartOrderModel.php';
 require_once __DIR__ . '/../includes/database.php';
 require_once __DIR__ . '/../model/orderModel.php';
 
+<<<<<<< HEAD
 ob_clean();
+=======
+// Supprimer tout output précédent et désactiver l'affichage des erreurs
+ob_clean();
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+>>>>>>> origin/develop
 
 function sendJsonResponse($data, $statusCode = 200) {
     ob_clean();
@@ -20,6 +30,7 @@ function sendJsonResponse($data, $statusCode = 200) {
     exit;
 }
 
+<<<<<<< HEAD
 class CartOrderController {
     private $pdo;
 
@@ -89,6 +100,10 @@ class CartOrderController {
 }
 
 try {
+=======
+try {
+    // Vérifier que le PDO est disponible
+>>>>>>> origin/develop
     if (!isset($pdo)) {
         throw new Exception("Connexion à la base de données non disponible");
     }
@@ -97,6 +112,7 @@ try {
     
     switch ($action) {
         case 'add':
+<<<<<<< HEAD
             try {
                 $rawData = file_get_contents('php://input');
                 $data = json_decode($rawData, true);
@@ -141,15 +157,41 @@ try {
                     'success' => false,
                     'error' => $e->getMessage()
                 ], 400);
+=======
+            $data = json_decode(file_get_contents('php://input'), true);
+            
+            if (!$data || !isset($data['id_article']) || !isset($data['quantite'])) {
+                sendJsonResponse(['error' => 'Données invalides'], 400);
+                break;
+            }
+            
+            try {
+                // Utilisation directe de addToCart qui utilise maintenant verifyArticle()
+                $result = addToCart($pdo, intval($data['id_article']), intval($data['quantite']));
+                sendJsonResponse([
+                    'success' => true,
+                    'data' => $result
+                ]);
+            } catch (Exception $e) {
+                sendJsonResponse(['error' => $e->getMessage()], 400);
+>>>>>>> origin/develop
             }
             break;
             
         case 'show':
             try {
+<<<<<<< HEAD
+=======
+                // S'assurer que la session est active
+>>>>>>> origin/develop
                 if (session_status() === PHP_SESSION_NONE) {
                     session_start();
                 }
 
+<<<<<<< HEAD
+=======
+                // Récupérer le panier selon le type d'utilisateur
+>>>>>>> origin/develop
                 $cart = isset($_SESSION['id_utilisateur']) 
                     ? getUserCart($pdo) 
                     : getGuestCart($pdo);
@@ -159,6 +201,10 @@ try {
                     'total' => $cart['total'] ?? 0
                 ]);
             } catch (Exception $e) {
+<<<<<<< HEAD
+=======
+                error_log('Erreur cartOrder/show: ' . $e->getMessage());
+>>>>>>> origin/develop
                 sendJsonResponse([
                     'error' => 'Erreur lors de la récupération du panier',
                     'details' => $e->getMessage()
@@ -167,6 +213,7 @@ try {
             break;
             
         case 'remove':
+<<<<<<< HEAD
             try {
                 $data = json_decode(file_get_contents('php://input'), true);
                 
@@ -186,10 +233,30 @@ try {
                     'success' => false,
                     'error' => $e->getMessage()
                 ], 400);
+=======
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!isset($data['id_article'])) {
+                sendJsonResponse(['error' => 'ID article manquant'], 400);
+            }
+            
+            try {
+                $result = removeFromCart($pdo, $data['id_article']);
+                if ($result === true) {
+                    sendJsonResponse([
+                        'success' => true, 
+                        'message' => 'Article supprimé avec succès'
+                    ]);
+                } else {
+                    sendJsonResponse(['error' => 'Erreur lors de la suppression'], 400);
+                }
+            } catch (Exception $e) {
+                sendJsonResponse(['error' => $e->getMessage()], 500);
+>>>>>>> origin/develop
             }
             break;
             
         case 'update':
+<<<<<<< HEAD
             try {
                 $data = json_decode(file_get_contents('php://input'), true);
                 if (!isset($data['id_article']) || !isset($data['quantite'])) {
@@ -221,11 +288,27 @@ try {
                     'success' => false,
                     'error' => $e->getMessage()
                 ], 400);
+=======
+            $data = json_decode(file_get_contents('php://input'), true);
+            if (!isset($data['id_article']) || !isset($data['quantite'])) {
+                sendJsonResponse(['error' => 'Données manquantes'], 400);
+            }
+            
+            try {
+                $result = updateCartQuantity($pdo, $data['id_article'], intval($data['quantite']));
+                sendJsonResponse([
+                    'success' => true,
+                    'data' => $result
+                ]);
+            } catch (Exception $e) {
+                sendJsonResponse(['error' => $e->getMessage()], 400);
+>>>>>>> origin/develop
             }
             break;
             
         case 'clear':
             try {
+<<<<<<< HEAD
                 if (session_status() === PHP_SESSION_NONE) {
                     session_start();
                 }
@@ -243,6 +326,46 @@ try {
                 } else {
                     throw new Exception('Erreur lors du vidage du panier');
                 }
+=======
+                $result = clearCart($pdo);
+                sendJsonResponse([
+                    'success' => true,
+                    'message' => 'Panier vidé avec succès'
+                ]);
+            } catch (Exception $e) {
+                sendJsonResponse([
+                    'error' => 'Erreur lors du vidage du panier'
+                ], 500);
+            }
+            break;
+
+        case 'validate':
+            try {
+                if (!isset($_SESSION['id_utilisateur'])) {
+                    throw new Exception('Utilisateur non authentifié');
+                }
+
+                $data = json_decode(file_get_contents('php://input'), true);
+                if (!$data) {
+                    throw new Exception('Données invalides');
+                }
+
+                // Récupérer le panier actuel
+                $cart = getCart($pdo);
+                if (empty($cart['items'])) {
+                    throw new Exception('Panier vide');
+                }
+
+                // Créer la commande avec la nouvelle fonction
+                $orderId = createCartOrder($pdo, $_SESSION['id_utilisateur']);
+
+                sendJsonResponse([
+                    'success' => true,
+                    'orderId' => $orderId,
+                    'message' => 'Commande validée avec succès',
+                    'redirect' => 'index.php'
+                ]);
+>>>>>>> origin/develop
             } catch (Exception $e) {
                 sendJsonResponse([
                     'success' => false,
@@ -250,16 +373,23 @@ try {
                 ], 500);
             }
             break;
+<<<<<<< HEAD
 
         case 'validate':
             $controller = new CartOrderController($pdo);
             $controller->validate();
             break;
+=======
+>>>>>>> origin/develop
             
         default:
             sendJsonResponse(['error' => 'Action non reconnue'], 404);
     }
 } catch (Exception $e) {
+<<<<<<< HEAD
+=======
+    error_log('Cart error: ' . $e->getMessage());
+>>>>>>> origin/develop
     sendJsonResponse(['error' => $e->getMessage()], 500);
 }
 ?>

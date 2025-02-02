@@ -16,12 +16,18 @@ const debounce = (func, wait) => {
 
 const updateURL = (page, search = '') => {
     const url = new URL(window.location.href);
+<<<<<<< HEAD
     url.searchParams.set('currentPage', page);
     if (search) {
         url.searchParams.set('search', search);
     } else {
         url.searchParams.delete('search');
     }
+=======
+    url.searchParams.set('page', 'userlist');
+    url.searchParams.set('currentPage', page);
+    search ? url.searchParams.set('search', search) : url.searchParams.delete('search');
+>>>>>>> origin/develop
     window.history.pushState({}, '', url);
 };
 
@@ -116,8 +122,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     })();
 
     const renderUserList = data => {
+<<<<<<< HEAD
         if (!elements.userListContainer) return;
         
+=======
+>>>>>>> origin/develop
         let html = '<table class="table"><thead><tr>' +
             '<th>ID</th><th>Nom</th><th>Email</th><th>Rôle</th><th>Actions</th>' +
             '</tr></thead><tbody>';
@@ -198,6 +207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitButton.disabled = true;
 
             try {
+<<<<<<< HEAD
                 if (!form.checkValidity()) {
                     form.reportValidity();
                     return;
@@ -221,6 +231,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             } catch (error) {
                 showToast(error.message || 'Erreur lors de la mise à jour', 'bg-danger');
                 console.error('Update error:', error);
+=======
+                if (!form.checkValidity()) return form.reportValidity();
+                const result = await updateUtilisateur(form, form.dataset.userId);
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    if (result.redirectUrl) return window.location.href = result.redirectUrl;
+                    await refreshUserList(state.currentPage);
+                    showToast('Utilisateur modifié avec succès', 'bg-success');
+                }
+            } catch (error) {
+                showToast(error.message, 'bg-danger');
+>>>>>>> origin/develop
             } finally {
                 submitButton.disabled = false;
             }

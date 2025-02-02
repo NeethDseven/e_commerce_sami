@@ -9,6 +9,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
     $confirm_password = $_POST['confirm_password'] ?? '';
     $errors = [];
 
+<<<<<<< HEAD
+=======
+    // Validations
+>>>>>>> origin/develop
     if (empty($nom) || empty($email) || empty($password) || empty($confirm_password)) {
         $errors[] = "Tous les champs sont obligatoires";
     }

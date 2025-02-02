@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 const baseUrl = '/projet/e_commerce_sami-develop';
+=======
+const baseUrl = '/Projet/ecommercesami/index.php';
+>>>>>>> origin/develop
 
 export async function updateOrderStatus(orderId, newStatus) {
     try {
@@ -23,6 +27,7 @@ export async function updateOrderStatus(orderId, newStatus) {
 
 export async function getOrderDetails(orderId) {
     try {
+<<<<<<< HEAD
         const response = await fetch(`index.php?page=orderdetails&order_id=${orderId}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
@@ -48,6 +53,17 @@ export async function getOrderDetails(orderId) {
     } catch (error) {
         console.error('Erreur récupération détails:', error);
         throw new Error('Impossible de récupérer les détails de la commande');
+=======
+        const response = await fetch(`${baseUrl}?controller=order&action=getDetails&order_id=${orderId}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Erreur récupération détails:', error);
+        throw new Error('Erreur lors de la récupération des détails');
+>>>>>>> origin/develop
     }
 }
 

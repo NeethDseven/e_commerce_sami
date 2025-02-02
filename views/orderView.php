@@ -1,4 +1,8 @@
 <?php
+<<<<<<< HEAD
+=======
+// Vérification supplémentaire de la session
+>>>>>>> origin/develop
 if (!isset($_SESSION['id_utilisateur'])) {
     header('Location: index.php?page=login');
     exit;
@@ -9,6 +13,10 @@ if (!isset($_SESSION['id_utilisateur'])) {
 <head>
     <meta charset="UTF-8">
     <title>Mes Commandes</title>
+<<<<<<< HEAD
+=======
+    // ...existing code...
+>>>>>>> origin/develop
 </head>
 <body>
     <div class="container mt-4">
@@ -18,6 +26,10 @@ if (!isset($_SESSION['id_utilisateur'])) {
                 Vous n'avez pas encore de commandes.
             </div>
         <?php else: ?>
+<<<<<<< HEAD
+=======
+            <!-- Affichage des commandes -->
+>>>>>>> origin/develop
             <div class="list-group">
                 <?php foreach ($orderData['orders'] as $order): ?>
                     <a href="index.php?page=orderDetails&id=<?= htmlspecialchars($order['id_commande']) ?>" 
@@ -36,5 +48,9 @@ if (!isset($_SESSION['id_utilisateur'])) {
             </div>
         <?php endif; ?>
     </div>
+<<<<<<< HEAD
+=======
+    // ...existing code...
+>>>>>>> origin/develop
 </body>
 </html>

@@ -44,10 +44,18 @@ if (!isset($_SESSION['auth']) || $_SESSION['Role'] !== 'admin') {
                 </tr>
             </thead>
             <tbody id="categoriesTable" class="sortable">
+<<<<<<< HEAD
+=======
+                <!-- Le contenu sera chargé dynamiquement -->
+>>>>>>> origin/develop
             </tbody>
         </table>
     </div>
 
+<<<<<<< HEAD
+=======
+    <!-- Modal pour ajouter/modifier une catégorie -->
+>>>>>>> origin/develop
     <div class="modal fade" id="categoryModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -91,6 +99,22 @@ if (!isset($_SESSION['auth']) || $_SESSION['Role'] !== 'admin') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="assets/js/components/categoryManagement.js" type="module"></script>
+<<<<<<< HEAD
     
+=======
+    <script>
+        // Configuration globale des toasts
+        document.addEventListener('DOMContentLoaded', () => {
+            const toastElList = document.querySelectorAll('.toast');
+            toastElList.forEach(toastEl => {
+                const toast = new bootstrap.Toast(toastEl, {
+                    animation: true,
+                    autohide: true,
+                    delay: 3000
+                });
+            });
+        });
+    </script>
+>>>>>>> origin/develop
 </body>
 </html>

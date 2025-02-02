@@ -5,7 +5,11 @@ import {
     validateOrder,
     getOrders,
     generateCartHTML,
+<<<<<<< HEAD
     generateSummaryHTML, 
+=======
+    generateSummaryHTML,  // Cette importation est utilisée
+>>>>>>> origin/develop
     updateCartCounter,
     showToast
 } from '../services/cartService.js';
@@ -24,6 +28,10 @@ export function cartCrud() {
             const newQuantity = parseInt(input.value);
             const maxStock = parseInt(input.dataset.stock);
 
+<<<<<<< HEAD
+=======
+            // Validation de la quantité
+>>>>>>> origin/develop
             if (isNaN(newQuantity) || newQuantity < 1) {
                 showToast('Quantité invalide', 'danger');
                 return;
@@ -64,6 +72,7 @@ export function cartCrud() {
 
         async handleValidateCart() {
             try {
+<<<<<<< HEAD
                 const cartData = await checkCartContent();
                 if (!cartData?.items?.length) {
                     showToast('Le panier est vide', 'warning');
@@ -96,6 +105,35 @@ export function cartCrud() {
             } catch (error) {
                 console.error('Error:', error);
                 showToast(error.message, 'danger');
+=======
+                const paymentData = await showPaymentModal();
+                
+                const response = await fetch('index.php?controller=cartOrder&action=validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        paymentInfo: paymentData
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast('Commande validée avec succès!', 'success');
+                    // Redirection vers l'accueil après un court délai
+                    setTimeout(() => {
+                        window.location.href = 'index.php';
+                    }, 1500);
+                } else {
+                    showToast(result.error || 'Erreur lors de la validation', 'danger');
+                }
+            } catch (error) {
+                console.error('Error validating cart:', error);
+                showToast('Erreur lors de la validation du panier', 'danger');
+>>>>>>> origin/develop
             }
         },
 
@@ -141,10 +179,18 @@ export function cartCrud() {
     };
 }
 
+<<<<<<< HEAD
+=======
+// Mise à jour de la fonction showCart pour utiliser cartCrud
+>>>>>>> origin/develop
 export async function showCart() {
     await renderCart();
     const crud = cartCrud();
 
+<<<<<<< HEAD
+=======
+    // Gestionnaire pour le bouton de validation
+>>>>>>> origin/develop
     const handleValidateClick = async (event) => {
         if (event.target.classList.contains('validate-cart')) {
             event.preventDefault();
@@ -152,9 +198,17 @@ export async function showCart() {
         }
     };
 
+<<<<<<< HEAD
     document.removeEventListener('click', handleValidateClick);
     document.addEventListener('click', handleValidateClick);
 
+=======
+    // Nettoyage et ajout des gestionnaires
+    document.removeEventListener('click', handleValidateClick);
+    document.addEventListener('click', handleValidateClick);
+
+    // Gestionnaire pour le bouton "Vider le panier"
+>>>>>>> origin/develop
     const clearCartButton = document.getElementById('clear-cart');
     if (clearCartButton) {
         const newButton = clearCartButton.cloneNode(true);
@@ -166,6 +220,10 @@ export async function showCart() {
         });
     }
 
+<<<<<<< HEAD
+=======
+    // Gestionnaire pour les autres actions
+>>>>>>> origin/develop
     const handleClick = async (event) => {
         const target = event.target;
 
@@ -225,9 +283,17 @@ export async function showCart() {
         }
     };
 
+<<<<<<< HEAD
     document.removeEventListener('click', handleClick);
     document.addEventListener('click', handleClick);
 
+=======
+    // Nettoyage et ajout du gestionnaire principal
+    document.removeEventListener('click', handleClick);
+    document.addEventListener('click', handleClick);
+
+    // Gestionnaire pour les inputs
+>>>>>>> origin/develop
     document.addEventListener('change', (event) => {
         if (event.target.matches('input[type="number"]')) {
             crud.handleQuantityInput(event.target);
@@ -255,11 +321,24 @@ async function renderCart() {
             credentials: 'same-origin'
         });
 
+<<<<<<< HEAD
         let data;
         try {
             data = await response.text();
             const cartData = JSON.parse(data);
             
+=======
+        // Log pour debug
+        console.log('Content-Type:', response.headers.get('content-type'));
+        
+        let data;
+        try {
+            data = await response.text();
+            console.log('Response raw:', data);
+            const cartData = JSON.parse(data);
+            
+            // Mise à jour de l'interface
+>>>>>>> origin/develop
             if (summaryContainer) {
                 summaryContainer.innerHTML = generateSummaryHTML(cartData);
             }
@@ -284,6 +363,32 @@ async function renderCart() {
     }
 }
 
+<<<<<<< HEAD
+=======
+async function displayOrderDetails(userId) {
+    try {
+        const orders = await getOrders(userId);
+        const lastOrder = orders[orders.length - 1];
+
+        await showModal({
+            title: 'Détails de la commande',
+            content: `
+                <p>Commande N° : ${lastOrder.id}</p>
+                <p>Date : ${new Date(lastOrder.date).toLocaleString()}</p>
+                <p>Total : ${lastOrder.total}€</p>
+            `,
+            buttons: `<button type="button" class="btn btn-secondary" data-modal-action="close">Fermer</button>`
+        });
+
+        await clearCart();
+        await renderCart();
+    } catch (error) {
+        console.error('Error displaying order details:', error);
+        showToast('Erreur lors de l\'affichage des détails de la commande', 'danger');
+    }
+}
+
+>>>>>>> origin/develop
 async function showPaymentModal() {
     return new Promise((resolve) => {
         const modalHTML = `
@@ -298,6 +403,7 @@ async function showPaymentModal() {
                             <form id="paymentForm">
                                 <div class="mb-3">
                                     <label class="form-label">Nom</label>
+<<<<<<< HEAD
                                     <input type="text" class="form-control" name="nom" required maxlength="50">
                                 </div>
                                 <div class="mb-3">
@@ -307,6 +413,13 @@ async function showPaymentModal() {
                                 <div class="mb-3">
                                     <label class="form-label">Email</label>
                                     <input type="email" class="form-control" name="email" required maxlength="100">
+=======
+                                    <input type="text" class="form-control" name="nom" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Prénom</label>
+                                    <input type="text" class="form-control" name="prenom" required>
+>>>>>>> origin/develop
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Adresse</label>
@@ -356,6 +469,7 @@ async function showPaymentModal() {
     });
 }
 
+<<<<<<< HEAD
 async function checkCartContent() {
     try {
         const response = await fetch('index.php?controller=cartOrder&action=show', {
@@ -373,6 +487,9 @@ async function checkCartContent() {
     }
 }
 
+=======
+// Initialisation au chargement de la page
+>>>>>>> origin/develop
 document.addEventListener('DOMContentLoaded', () => {
     showCart();
 });

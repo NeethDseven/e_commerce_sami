@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { updateOrderStatus, getOrderDetails } from '../services/orderDetailsService.js';
+=======
+import { updateOrderStatus, getOrderDetails, refreshOrderData } from '../services/orderDetailsService.js';
+>>>>>>> origin/develop
 
 let orderId;
 let statusBadge;
@@ -11,10 +15,13 @@ function initializeElements() {
     statusButtons = document.querySelectorAll('.status-btn');
     printButton = document.getElementById('printButton');
     orderDetailsContainer = document.querySelector('#orderDetailsContent');
+<<<<<<< HEAD
     const viewDetailsButtons = document.querySelectorAll('.view-details-btn');
     viewDetailsButtons.forEach(button => {
         button.addEventListener('click', handleViewDetailsClick);
     });
+=======
+>>>>>>> origin/develop
 }
 
 function getOrderIdFromUrl() {
@@ -48,6 +55,7 @@ async function handleStatusChange(event) {
     try {
         const result = await updateOrderStatus(orderId, newStatus);
         if (result.success) {
+<<<<<<< HEAD
             updateStatusDisplay(result.order.statut);
             await loadOrderDetails();
             showNotification('Statut mis à jour avec succès');
@@ -62,11 +70,20 @@ async function handleStatusChange(event) {
         }
     } catch (error) {
         console.error('Error:', error);
+=======
+            updateStatusDisplay(newStatus);
+            showNotification(`Statut mis à jour: ${newStatus}`);
+            const newData = await refreshOrderData(orderId);
+            updateUI(newData);
+        }
+    } catch (error) {
+>>>>>>> origin/develop
         showNotification(error.message, 'error');
     }
 }
 
 function updateUI(data) {
+<<<<<<< HEAD
     if (!data || !data.order) {
         console.error('Invalid data received:', data);
         return;
@@ -88,6 +105,15 @@ function updateStatusDisplay(newStatus) {
         return;
     }
 
+=======
+    if (data.order) {
+        updateStatusDisplay(data.order.statut);
+        updateOrderDetails(data);
+    }
+}
+
+function updateStatusDisplay(newStatus) {
+>>>>>>> origin/develop
     if (statusBadge) {
         statusBadge.textContent = newStatus;
         
@@ -112,6 +138,7 @@ function updateStatusDisplay(newStatus) {
     }
 }
 
+<<<<<<< HEAD
 
 function generateOrderDetailsHtml(data) {
     if (!data || !data.order) {
@@ -123,6 +150,21 @@ function generateOrderDetailsHtml(data) {
             <p><strong>Client:</strong> ${data.order.nom || data.order.nom_utilisateur || 'Non renseigné'}</p>
             <p><strong>Date:</strong> ${data.order.date_commande || 'Non renseignée'}</p>
             <p><strong>Total:</strong> ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(data.total || 0)}</p>
+=======
+function updateOrderDetails(data) {
+    if (orderDetailsContainer) {
+        const detailsHtml = generateOrderDetailsHtml(data);
+        orderDetailsContainer.innerHTML = detailsHtml;
+    }
+}
+
+function generateOrderDetailsHtml(data) {
+    return `
+        <div class="order-info">
+            <p><strong>Client:</strong> ${data.order.nom_utilisateur}</p>
+            <p><strong>Date:</strong> ${data.order.date_commande}</p>
+            <p><strong>Total:</strong> ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(data.total)}</p>
+>>>>>>> origin/develop
         </div>
         <table class="table">
             <thead>
@@ -134,13 +176,18 @@ function generateOrderDetailsHtml(data) {
                 </tr>
             </thead>
             <tbody>
+<<<<<<< HEAD
                 ${Array.isArray(data.details) ? data.details.map(item => `
+=======
+                ${data.details.map(item => `
+>>>>>>> origin/develop
                     <tr>
                         <td>${item.nom}</td>
                         <td>${item.quantite}</td>
                         <td>${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(item.prix)}</td>
                         <td>${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(item.prix * item.quantite)}</td>
                     </tr>
+<<<<<<< HEAD
                 `).join('') : '<tr><td colspan="4">Aucun article trouvé</td></tr>'}
             </tbody>
             <tfoot>
@@ -149,6 +196,10 @@ function generateOrderDetailsHtml(data) {
                     <td><strong>${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(data.total || 0)}</strong></td>
                 </tr>
             </tfoot>
+=======
+                `).join('')}
+            </tbody>
+>>>>>>> origin/develop
         </table>`;
 }
 
@@ -160,6 +211,7 @@ function showNotification(message, type = 'success') {
     setTimeout(() => notification.remove(), 3000);
 }
 
+<<<<<<< HEAD
 function handleViewDetailsClick(event) {
     const orderId = event.currentTarget.dataset.orderId;
     window.location.href = `orderDetailsView.php?order_id=${orderId}`;
@@ -191,3 +243,12 @@ function initializeFromStorage() {
         updateStatusDisplay(storedStatus);
     }
 }
+=======
+// Initialisation
+document.addEventListener('DOMContentLoaded', () => {
+    orderId = getOrderIdFromUrl();
+    initializeElements();
+    attachEventListeners();
+    loadOrderDetails();
+});
+>>>>>>> origin/develop

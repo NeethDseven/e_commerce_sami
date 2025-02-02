@@ -27,6 +27,7 @@ function verifyArticle($pdo, $idArticle) {
 
 function addToCart($pdo, $idArticle, $quantite) {
     try {
+<<<<<<< HEAD
         // Debug log
         error_log("Adding article to cart - Raw ID: " . var_export($idArticle, true));
         error_log("Adding article to cart - Type before conversion: " . gettype($idArticle));
@@ -85,15 +86,42 @@ function addToCart($pdo, $idArticle, $quantite) {
 
         $_SESSION['cart'][] = $cartItem;
         error_log("Cart after adding item: " . var_export($_SESSION['cart'], true));
+=======
+        // Utiliser la fonction unifiée
+        $stockDisponible = verifyArticle($pdo, $idArticle);
+
+        if ($stockDisponible <= 0) {
+            throw new Exception("Stock épuisé");
+        }
+
+        if ($quantite > $stockDisponible) {
+            throw new Exception("Stock insuffisant. Il ne reste que $stockDisponible article(s) disponible(s)");
+        }
+
+        // Ajouter au panier selon le type d'utilisateur
+        $result = isUserConnected() 
+            ? addToUserCart($pdo, $idArticle, $quantite)
+            : addToGuestCart($idArticle, $quantite);
+
+        if (!$result) {
+            throw new Exception("Erreur lors de l'ajout au panier");
+        }
+>>>>>>> origin/develop
 
         return [
             'success' => true,
             'message' => 'Article ajouté au panier',
+<<<<<<< HEAD
             'article' => $cartItem
         ];
 
     } catch (Exception $e) {
         error_log("Error in addToCart: " . $e->getMessage());
+=======
+            'stock_restant' => $stockDisponible - $quantite
+        ];
+    } catch (Exception $e) {
+>>>>>>> origin/develop
         throw new Exception($e->getMessage());
     }
 }
@@ -141,6 +169,7 @@ function addToUserCart($pdo, $idArticle, $quantite) {
     }
 }
 
+<<<<<<< HEAD
 function getGuestCart($pdo) {
     try {
         if (!isset($_SESSION['cart'])) {
@@ -162,6 +191,23 @@ function getGuestCart($pdo) {
         error_log('Erreur dans getGuestCart: ' . $e->getMessage());
         throw new Exception('Erreur lors de la récupération du panier');
     }
+=======
+function addToGuestCart($idArticle, $quantite) {
+    if (!isset($_SESSION['panier'])) {
+        $_SESSION['panier'] = [];
+    }
+    
+    if (!isset($_SESSION['panier'][$idArticle])) {
+        $_SESSION['panier'][$idArticle] = 0;
+    }
+    $_SESSION['panier'][$idArticle] += $quantite;
+
+    return [
+        'success' => true,
+        'guest_id' => getGuestIdentifier(),
+        'message' => 'Article ajouté au panier invité'
+    ];
+>>>>>>> origin/develop
 }
 
 function getCart($pdo) {
@@ -267,6 +313,7 @@ function getUserCart($pdo) {
     }
 }
 
+<<<<<<< HEAD
 function removeFromCart($pdo, $idArticle) {
     try {
         error_log("Removing article ID: $idArticle from cart");
@@ -299,6 +346,77 @@ function removeFromCart($pdo, $idArticle) {
     } catch (Exception $e) {
         error_log("Error in removeFromCart: " . $e->getMessage());
         throw new Exception($e->getMessage());
+=======
+function getGuestCart($pdo) {
+    try {
+        // S'assurer que la session est démarrée
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        $items = [];
+        $total = 0;
+
+        // Initialiser le panier si nécessaire
+        if (!isset($_SESSION['panier'])) {
+            $_SESSION['panier'] = [];
+        }
+
+        // Si le panier n'est pas vide
+        if (!empty($_SESSION['panier'])) {
+            foreach ($_SESSION['panier'] as $idArticle => $quantite) {
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        a.*,
+                        COALESCE(
+                            (SELECT p.prix_promotionnel 
+                             FROM promotion p 
+                             WHERE p.id_article = a.id_article 
+                             AND CURRENT_DATE BETWEEN p.date_debut AND p.date_fin 
+                             LIMIT 1
+                            ), 
+                            a.prix
+                        ) as prix_final
+                    FROM article a 
+                    WHERE a.id_article = ?
+                ");
+                
+                $stmt->execute([$idArticle]);
+                $article = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($article) {
+                    $article['quantite'] = $quantite;
+                    $items[] = $article;
+                    $total += $article['prix_final'] * $quantite;
+                }
+            }
+        }
+
+        return [
+            'items' => $items,
+            'total' => round($total, 2)
+        ];
+
+    } catch (PDOException $e) {
+        error_log('Erreur SQL dans getGuestCart: ' . $e->getMessage());
+        throw new Exception('Erreur lors de la récupération du panier invité');
+    } catch (Exception $e) {
+        error_log('Erreur dans getGuestCart: ' . $e->getMessage());
+        throw new Exception('Erreur inattendue lors de la récupération du panier');
+    }
+}
+
+function removeFromCart($pdo, $idArticle, $quantite = null) {
+    try {
+        if (isUserConnected()) {
+            return removeFromUserCart($pdo, $idArticle);
+        } else {
+            return removeFromGuestCart($idArticle);
+        }
+    } catch (Exception $e) {
+        error_log('Erreur removeFromCart: ' . $e->getMessage());
+        throw new Exception("Erreur lors de la suppression du panier");
+>>>>>>> origin/develop
     }
 }
 
@@ -342,7 +460,11 @@ function updateCartQuantity($pdo, $idArticle, $newQuantity) {
             throw new Exception("Stock insuffisant. Il ne reste que $stockDisponible article(s) disponible(s)");
         }
 
+<<<<<<< HEAD
         // Pour les utilisateurs connectés
+=======
+        // Le reste de la fonction reste inchangé
+>>>>>>> origin/develop
         if (isUserConnected()) {
             $stmt = $pdo->prepare("
                 UPDATE ligne_commande
@@ -359,6 +481,7 @@ function updateCartQuantity($pdo, $idArticle, $newQuantity) {
                 'id_article' => $idArticle
             ]);
         } else {
+<<<<<<< HEAD
             // Pour les invités utilisant le panier de session
             if (!isset($_SESSION['cart'])) {
                 throw new Exception("Panier non trouvé");
@@ -377,12 +500,22 @@ function updateCartQuantity($pdo, $idArticle, $newQuantity) {
             if (!$found) {
                 throw new Exception("Article non trouvé dans le panier");
             }
+=======
+            if (!isset($_SESSION['panier'])) {
+                $_SESSION['panier'] = [];
+            }
+            $_SESSION['panier'][$idArticle] = $newQuantity;
+>>>>>>> origin/develop
         }
         
         return [
             'success' => true,
+<<<<<<< HEAD
             'stock_restant' => $stockDisponible - $newQuantity,
             'new_quantity' => $newQuantity
+=======
+            'stock_restant' => $stockDisponible - $newQuantity
+>>>>>>> origin/develop
         ];
     } catch (Exception $e) {
         error_log('Error in updateCartQuantity: ' . $e->getMessage());
@@ -392,6 +525,7 @@ function updateCartQuantity($pdo, $idArticle, $newQuantity) {
 
 function clearCart($pdo) {
     try {
+<<<<<<< HEAD
         // Initialize cart if not exists
         if (!isset($_SESSION['cart'])) {
             $_SESSION['cart'] = [];
@@ -405,6 +539,20 @@ function clearCart($pdo) {
             'success' => true,
             'message' => 'Panier vidé avec succès'
         ];
+=======
+        if (isUserConnected()) {
+            $stmt = $pdo->prepare("
+                DELETE ligne_commande FROM ligne_commande
+                JOIN commande ON commande.id_commande = ligne_commande.id_commande
+                WHERE commande.id_utilisateur = :id_utilisateur 
+                AND commande.statut = 'en_cours'
+            ");
+            $stmt->execute(['id_utilisateur' => $_SESSION['id_utilisateur']]);
+        } else {
+            $_SESSION['panier'] = [];
+        }
+        return true;
+>>>>>>> origin/develop
     } catch (Exception $e) {
         error_log('Error in clearCart: ' . $e->getMessage());
         throw new Exception('Erreur lors du vidage du panier');
