@@ -1,6 +1,15 @@
 .env
-vendor/
-node_modules/
+/.idea/
+/vendor/
+/node_modules/
 composer.json
 composer.lock
-.idea/
+
+/.idea/
+
+# Ignorer le répertoire vendor
+/vendor/
+
+# Ignorer les fichiers composer.json et composer.lock
+composer.json
+composer.lock
